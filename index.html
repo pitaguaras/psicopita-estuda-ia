@@ -678,6 +678,138 @@ function relatedQuestions(day){
 
 function pool(area){return QUESTION_BANK.map((q,i)=>({...{subject:q[0],question:q[1],options:q[2],answer:q[3],explain:q[4],topic:q[5]},id:i})).filter(q=>!area||q.subject===area)}
 function shuffled(a){let b=a.slice();for(let i=b.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b}
+function startMock(index){
+ index=Number(index);
+ if(![0,1,2].includes(index)){toast('Simulado não encontrado.');return}
+ const dates=benchmarkDates(),scheduled=dates[index];
+ if(!examBlueprintReady()){toast('Banco de simulados incompleto. Atualize a página (Ctrl+F5).');return}
+ if(state.mockResults?.[index])return renderMockResults(index);
+ if(today()<scheduled.date&&!state.mockSessions?.[index]){
+  toast('O '+scheduled.title.toLowerCase()+' estará disponível em '+formatDay(scheduled.date)+'.');return;
+ }
+ state.mockSessions=state.mockSessions||{};
+ let session=state.mockSessions[index];
+ if(!session){
+  const questions=getExamQuestions(index);
+  session={ids:questions.map(q=>q.id),at:0,day:scheduled.date,area:'Todas',sim:true,
+   simIndex:index,results:[],started:nowIso()};
+  state.mockSessions[index]=session;
+ }
+ state.session=session;
+ persist();
+ renderMock();
+}
+
+function renderMock(){
+ const s=state.session;
+ if(!s||s.simIndex===undefined)return show('agenda');
+ currentView='questions';
+ const index=s.simIndex,questions=getExamQuestions(index),total=questions.length;
+ if(s.at>=total){
+  const answered=new Set(s.results.map(r=>r.position)).size;
+  $('#main').innerHTML=header(MOCK_LABELS[index]+' — entrega','Você chegou ao final da prova de 70 questões.')+
+   `<div class="card" style="max-width:760px">
+   <h3>Conferir antes de entregar</h3>
+   <div class="metric-number">${answered} / ${total}</div>
+   <p class="small muted">Ao finalizar, todas as respostas serão corrigidas e registradas para comparação.
+   O simulado não poderá ser refeito, garantindo uma única aferição por etapa.</p>
+   ${answered!==total?'<p class="notice">Existem questões sem resposta. Volte e conclua antes de enviar.</p>':''}
+   <button class="btn" data-action="mockprev">← Voltar à última questão</button>
+   <button class="btn gold" data-action="finalmock" ${answered!==total?'disabled':''}>Entregar e ver meu resultado →</button></div>`;
+  return;
+ }
+ const q=questions[s.at],choice=s.results.find(r=>r.position===s.at);
+ const date=benchmarkDates()[index];
+ $('#main').innerHTML=header(MOCK_LABELS[index],`Etapa ${index+1}/3 · ${formatDay(date.date)} · avaliação diagnóstica sem feedback antecipado.`,
+ '<button class="btn" data-action="mockpause">Salvar e voltar à agenda</button>')+
+ `<div class="card" style="max-width:980px">
+ <div class="split"><span class="badge">${htmlSafe(q.subject)} · ${htmlSafe(q.topic)}</span>
+ <span class="status">Questão ${s.at+1} / ${total}</span></div>
+ ${progress(s.at,total)}
+ <div class="question"><h3>${htmlSafe(q.question)}</h3>
+ ${q.options.map((opt,i)=>`<button class="option ${choice?.choice===i?'selected':''}"
+ data-action="answer" data-choice="${i}" ${choice?'disabled':''}>
+ <span class="choice-badge">${letters[i]}</span><span>${htmlSafe(opt)}</span></button>`).join('')}
+ ${choice?`<p class="small muted">Resposta registrada. O gabarito será mostrado somente após a entrega.</p>
+ <button class="btn primary" data-action="nextquestion">${s.at===total-1?'Revisar entrega →':'Próxima questão →'}</button>`:
+ '<p class="help">Selecione uma alternativa. As respostas e explicações ficam protegidas até o término do simulado.</p>'}
+ </div>
+ <div class="split" style="margin-top:15px">
+ <span class="small muted">${s.results.length} de ${total} respostas marcadas</span>
+ <button class="btn" data-action="mockpause">Sair sem perder respostas</button></div></div>`;
+}
+
+function answerMock(choice){
+ const s=state.session;if(!s||s.simIndex===undefined)return;
+ const questions=getExamQuestions(s.simIndex),q=questions[s.at];
+ if(!q||s.results.some(r=>r.position===s.at))return;
+ const n=Number(choice);if(!Number.isInteger(n)||n<0||n>=5)return;
+ s.results.push({id:q.id,choice:n,position:s.at,date:nowIso(),subject:q.subject,
+   topic:q.topic,correct:n===q.answer});
+ state.mockSessions=state.mockSessions||{};state.mockSessions[s.simIndex]=s;
+ persist();renderMock();
+}
+
+function finishMock(){
+ const s=state.session;
+ if(!s||s.simIndex===undefined)return;
+ const questions=getExamQuestions(s.simIndex);
+ const answers=s.results;
+ if(answers.length!==70||new Set(answers.map(r=>r.position)).size!==70){
+  toast('Responda às 70 questões antes de entregar.');return;
+ }
+ const bySubject={Português:0,Inglês:0,Psicologia:0};
+ let correct=0;
+ const details=questions.map((q,pos)=>{
+  const a=answers.find(r=>r.position===pos),right=a.choice===q.answer;
+  if(right){correct++;bySubject[q.subject]++}
+  return {id:q.id,subject:q.subject,topic:q.topic,docId:q.sourceId,question:q.question,
+   correctOption:q.options[q.answer],answerIndex:q.answer,choiceIndex:a.choice,
+   choiceText:q.options[a.choice],correct:right,explain:q.explain};
+ });
+ state.mockResults=state.mockResults||{};
+ state.mockResults[s.simIndex]={index:s.simIndex,correct,total:70,bySubject,
+  details,startedAt:s.started,finishedAt:nowIso(),date:benchmarkDates()[s.simIndex].date,
+  difficultyProfile:{easy:14,medium:41,hard:15},version:1};
+ if(state.mockSessions)delete state.mockSessions[s.simIndex];
+ state.session=null;
+ persist();
+ renderMockResults(s.simIndex);
+}
+
+function renderMockResults(index){
+ index=Number(index);
+ const r=state.mockResults?.[index];if(!r)return show('agenda');
+ currentView='questions';
+ const previous=index?state.mockResults?.[index-1]:null;
+ const delta=previous?r.correct-previous.correct:null;
+ const missed=r.details.filter(x=>!x.correct);
+ const byArea=[['Português',10],['Inglês',10],['Psicologia',50]];
+ $('#main').innerHTML=header(MOCK_LABELS[index]+' — resultado','Correção concluída. Compare sua evolução e identifique os conteúdos que exigem revisão.',
+ '<button class="btn" data-action="agenda">← Voltar ao cronograma</button>')+
+ `<div class="card" style="max-width:900px;margin-bottom:18px">
+ <div class="eyebrow">PONTUAÇÃO DA ETAPA ${index+1}</div>
+ <div class="metric-number">${r.correct} / ${r.total}</div>
+ <p class="small muted">${Math.round(r.correct/r.total*100)}% de acertos · Data: ${formatDay(r.date)}.</p>
+ ${progress(r.correct,r.total)}
+ ${delta===null?'<p>Primeira avaliação: este será o ponto de partida para medir sua evolução.</p>':
+ `<p><strong>Variação em relação ao simulado anterior: ${delta>=0?'+':''}${delta} acertos.</strong></p>`}
+ <div class="grid third">${byArea.map(([area,total])=>`<div><h3>${area}</h3>
+ <div class="metric-number">${r.bySubject[area]} / ${total}</div>${progress(r.bySubject[area],total)}</div>`).join('')}</div>
+ <p class="small muted">Os três cadernos mantêm o mesmo perfil de dificuldades e distribuição das competências; a comparação é pedagógica, não equivalência estatística certificada.</p></div>
+ ${mockProgressPanel()}
+ <div class="card"><h3>Correção e justificativas</h3>
+ <p class="small muted">${missed.length} questões incorretas. Explicações só são exibidas após a entrega.</p>
+ ${missed.length?missed.map((q,i)=>`<details style="border-bottom:1px solid #e2ebed;padding:12px 0">
+ <summary style="cursor:pointer"><strong>${htmlSafe(q.subject)} · ${htmlSafe(q.topic)}</strong>
+ — ${htmlSafe(q.question.slice(0,115))}${q.question.length>115?'…':''}</summary>
+ <p><strong>Questão:</strong> ${htmlSafe(q.question)}</p>
+ <p><strong>Sua resposta:</strong> ${htmlSafe(q.choiceText)}</p>
+ <p><strong>Resposta correta:</strong> ${htmlSafe(q.correctOption)}</p>
+ <div class="explanation">${htmlSafe(q.explain)}</div></details>`).join(''):
+ '<p class="notice green">Você acertou todas as questões do simulado.</p>'}
+ </div>`;
+}
 function startQuestions(area,count=10,day=null,sim=false){
  let ids;
  if(sim)ids=[...shuffled(pool('Português')).slice(0,10),...shuffled(pool('Inglês')).slice(0,10),...shuffled(pool('Psicologia')).slice(0,50)].map(q=>q.id);
