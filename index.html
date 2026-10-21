@@ -165,7 +165,7 @@ const dateOf=s=>new Date(s+'T12:00:00');
 const stepDate=(s,days)=>{let d=dateOf(s);d.setDate(d.getDate()+days);return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
 const formatDay=s=>dateOf(s).toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'});
 const nowIso=()=>new Date().toISOString();
-const DEFAULT={version:3,updatedAt:'',settings:{minutes:90,days:[1,2,3,4,5,6],startDate:today(),pagesPerHour:8},read:{},files:{},agenda:{},answers:[],simulations:[],flash:{},session:null};
+const DEFAULT={version:3,updatedAt:'',settings:{minutes:90,days:[1,2,3,4,5,6],startDate:today(),pagesPerHour:8},read:{},files:{},agenda:{},docProgress:{},answers:[],simulations:[],flash:{},session:null};
 let state;try{state=Object.assign(clone(DEFAULT),JSON.parse(localStorage.getItem(key)||'{}'));state.settings={...DEFAULT.settings,...(state.settings||{})};}catch{state=clone(DEFAULT)};
 const GOOGLE_DRIVE_MAP={"pt01":"1tk5xqy0mcsL1F6KpgIlF0LMlX10X4yje","pt02":"1-yZL2ExXq46uinj6-THddek432Yv2OnD","pt03":"1Qx_RT187fxxvSogxRG9YDBMLZeyp45Bh","pt04":"1PELy2_5kBLb9AUkAJTMVxRp4CMUllmo5","pt05":"1KJEmnNUxVVGkcBR-vdzTwIT0whgw_5oP","pt06":"1WNma_SRlnC17VLwh0yUDWHpQQBnyZmZm","pt07":"1Su7VKuDmzZijXmd9rcbw0y91_48ZNCu0","pt08":"1LrgI-6JQdfBHYu2F8a0OaUM7jW-oh6_L","pt09":"1aldPAvekPbpTfcJkSV1ydYtClRPI27Wv","pt10":"1Ghb0e461lyrq5lQetSaA3T2uvzxG_qKh","pt11":"1199KfzNiXwL2pHxIWeZa3AS8chkJdZKc","pt12":"1YMrWVpprp5sIpBmY-yIadBUMCNfWSyMw","pt13":"1ZwVej0ChkLlfxyru1f0i9PFDNVy6IcEm","pt14":"1wQxFHwGurMc83oajJQ87giUAlRglVk52","pt15":"1wmkB43d_JhCSO4Ql4DiM3K3uoO4AOP1j","pt16":"1oawGghLqzivqU3AiZfigqF-8LTulPYz_","pt17":"1Z80CdKlpElpShUuPxeajYvfOgUABZIld","pt18":"1pjCeeuxbLIQpRzBRVuycjWbWAuQ9Es9Z","pt19":"1WvsedeuQEQdplMVS0RH6X__Ve_DVWE1T","pt20":"1wM0fRmtmYk7BA9v5FiElpxlwC93kahnA","pt21":"1RatHcTHJnFOvlXEGFnTvrVqa813nT5gl","pt22":"1I25QsY7SxmUN6n1nS2zSEski4I1NsCVX","pt23":"1-OnR3Gf0EP5DeUoJc8Zdl4vpwm8Rj60e","pt24":"185dl7u49VLQIGkm5t30daZA0FV-KTmwG","pt25":"1sKrBSFJzWl_mpNaAL14FQGHH1NgV9fqc","pt26":"1bc3SVyDdGe3ydPKYnHBIzekJ2mI90UU4","cp01":"1FJNxVtzsSPjgq-LwjSCOuhewv7HqHln1","cp02":"10DHSalsE60Hdrhei5LoP_eZ4z-aDIWv6","cp03":"114ZB1zg7oPkk9O3j8ZB9TEt0Kk4_LGmh","cp04":"1itVInBlR1aCvx-h6Vebisl0Bsi2i4k44","cp05":"1t3NOYb1BsKlhghU9-kqcNEPrYFp4tNJi","cp06":"1UvyQehhb8LyguyFVvFHiZk7RugUdFeLF","cp07":"1RiN55Zlu1ivd8KDrEOqzdYDH_orxczTV","cp08":"1s5bTkQ21Y4Hb76VaRRfQFo4WY9txitBi","cp09":"1T-Wjee0rsWs82r6ZCgu_mGYo7ZxeTsqz","cp10":"1jP_gF1O67jlBkhPqbbLpfMM8GeJ2AzCE","cp11":"1H0V-IinJhpRrw2EeTz9o4s6NmeUcIciK","cp12":"1wsu-YCB-DT6n12LSzsaq_GvIwjfB6key","cp13":"1A2p80uqG49hSwvCb1KoYmksFOyctnHiK","cp14":"1OKOm9NWJ66Xmzm4reQJt3_fqF4S2PNfB","cp15":"1MZ-a1P4XeeVQAHCBV6PMCxVXvdZ26Ubu","cp16":"1bFQYKk0ioSrbuYo9b0AWfWhNaOoXw1SB","cp17":"1c2H5WkfZW6k_E1itWzSgav3moaUxdS5j","cp18":"1o-ApkC8R8YkLmB_9tQPYbMEasq13N5An","cp19":"10w4hdhp0S4rl4jGCnvSfdBDeLBmGEzYo","cp20":"1hpCuhEKbCmAyy6JRsujmZsfbC8yOZ7nZ","cp21":"1ZFyueRP95t3FZQNi_629lCVnz1-fMGag","cp22":"1C8heN1Mc8A2161ITTP_0auYG-uB_83bh","cp23":"1OHWSFatLxXtfxo_nEs9CoggQlTgOtdrk","cp24":"1aCvO7i4DDGT3pQzjIGLwooYSKlhcOPdE","cp25":"1M5QZbihXqq0IGTzpkDXRm8GtvYCZaT6n","cp26":"1lIh_GM8YR_KgQ1ARS2FKH9XFIG4RPMEA","cp27":"1xRhm_ky1cinG31RithcJDe19Aki5Jai0","vd01":"1qByPqyCwEsUa8e53jF7ofdIngSVqp5As"};
 const googleDocId=id=>GOOGLE_DRIVE_MAP[id]||null;
@@ -174,36 +174,72 @@ let catalog=[],currentView='dashboard',reader={id:null,page:1,day:null,blobUrl:n
 const letters='ABCDE';
 const primaryDocs=()=>catalog.filter(d=>['Apostila completa','Vade Mecum'].includes(d.kind));
 const subjects=['Português','Inglês','Psicologia'];
-const areasForPlan=['Psicologia','Português','Psicologia','Inglês','Psicologia','Português','Psicologia','Inglês','Psicologia','Psicologia'];
-function calcPlan(){
- const cfg=state.settings;let cursors={Português:{i:0,p:1},Inglês:{i:0,p:1},Psicologia:{i:0,p:1}};
+
+// O roteiro agora utiliza a apostila inteira como unidade, nunca partes de páginas.
+// A previsão de dias é uma estimativa de carga, não uma declaração de leitura concluída.
+const areasForPlan=['Psicologia','Português','Psicologia','Inglês','Português','Psicologia','Inglês','Português','Psicologia'];
+const docState=id=>state.docProgress?.[id]||{};
+const docFinished=id=>{let o=docState(id);return !!(o.completedAt&&o.quiz&&o.flash)};
+function orderedDocs(){
  const docs={};subjects.forEach(a=>docs[a]=primaryDocs().filter(d=>d.area===a));
- const days=[];let nth=0;
- for(let k=0;k<365;k++){
-  let date=stepDate(cfg.startDate,k),weekday=dateOf(date).getDay();
-  if(!cfg.days.includes(weekday)){days.push({date,rest:true});continue}
-  const area=areasForPlan[nth%areasForPlan.length];nth++;
-  const list=docs[area];if(!list?.length)continue;
-  const cursor=cursors[area];if(cursor.i>=list.length){cursor.i=0;cursor.p=1}
-  let doc=list[cursor.i],start=cursor.p;
-  let allotted=Math.max(3,Math.min(35,Math.round((cfg.minutes-25)/60*cfg.pagesPerHour)));
-  let end=Math.min(doc.pages,start+allotted-1);
-  days.push({date,area,id:doc.id,title:doc.title,start,end,pages:end-start+1,rest:false});
-  cursor.p=end+1;if(cursor.p>doc.pages){cursor.i++;cursor.p=1}
+ const out=[],offsets={Português:0,Inglês:0,Psicologia:0};
+ while(out.length<primaryDocs().length){
+  let before=out.length;
+  for(const area of areasForPlan){
+   const d=docs[area][offsets[area]];
+   if(d){out.push(d);offsets[area]++;}
+  }
+  if(out.length===before)break;
  }
- return days;
+ return out;
 }
+function calcPlan(){
+ const cfg=state.settings;const result=[];
+ let clock=cfg.startDate>today()?cfg.startDate:today();
+ const dailyPages=Math.max(1,cfg.minutes/60*cfg.pagesPerHour);
+ for(const doc of orderedDocs()){
+  if(docFinished(doc.id))continue;
+  while(!cfg.days.includes(dateOf(clock).getDay()))clock=stepDate(clock,1);
+  const startDate=clock;
+  // Questões e flashcards usam parte da jornada; reservar 40 min. por apostila.
+  const estimatedHours=docState(doc.id).completedAt?0:(doc.pages/cfg.pagesPerHour);
+  const sessions=Math.max(1,Math.ceil((estimatedHours*60+(docState(doc.id).completedAt?0:40))/cfg.minutes));
+  let endDate=startDate;
+  for(let i=1;i<sessions;i++){
+    do{endDate=stepDate(endDate,1)}while(!cfg.days.includes(dateOf(endDate).getDay()));
+  }
+  result.push({date:startDate,endDate,estimatedDays:sessions,area:doc.area,id:doc.id,title:doc.title,pages:doc.pages,start:1,end:doc.pages,rest:false});
+  clock=stepDate(endDate,1);
+ }
+ return result;
+}
+function feasibility(){
+ const cfg=state.settings,deadline='2026-12-05';
+ const remaining=primaryDocs().filter(d=>!docState(d.id).completedAt);
+ const pages=remaining.reduce((a,b)=>a+b.pages,0);
+ let d=today()>cfg.startDate?today():cfg.startDate,workDays=0;
+ while(d<=deadline){if(cfg.days.includes(dateOf(d).getDay()))workDays++;d=stepDate(d,1)}
+ const hoursPerStudyDay=workDays?pages/cfg.pagesPerHour/workDays:Infinity;
+ return {pages,docs:remaining.length,workDays,requiredPagesPerDay:workDays?pages/workDays:Infinity,requiredHoursPerDay:hoursPerStudyDay,availableHoursPerDay:cfg.minutes/60,deadline,possible:hoursPerStudyDay<=cfg.minutes/60};
+}
+
 function metric(){let readPages=Object.values(state.read).reduce((sum,v)=>sum+(Array.isArray(v)?v.length:0),0),total=primaryDocs().reduce((s,d)=>s+d.pages,0),n=state.answers.length,c=state.answers.filter(a=>a.correct).length,fl=Object.keys(state.flash).length;return{readPages,total,answered:n,accuracy:n?Math.round(c/n*100):null,flash:fl}};
 function persist(){state.updatedAt=nowIso();localStorage.setItem(key,JSON.stringify(state));if(cloudUser&&cloudClient){clearTimeout(cloudTimer);cloudTimer=setTimeout(syncUp,1500)}}
 function toast(s){let el=$('#toast');el.textContent=s;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),3300)}
 function progress(n,d){let p=d?Math.max(0,Math.min(100,Math.round(n/d*100))):0;return `<div class="progressbar"><div style="width:${p}%"></div></div>`}
 function header(title,subtitle,action=''){return `<div class="page-head"><div><div class="eyebrow">PSICOPITA · ESTUDA IA</div><h1>${title}</h1><p>${subtitle}</p></div>${action}</div>`}
 function show(view){currentView=view;document.querySelectorAll('.nav-btn[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view));$('#breadcrumb').innerHTML='Início <b>/</b> '+({dashboard:'Visão geral',agenda:'Agenda de estudos',library:'Minha biblioteca',questions:'Questões e simulados',review:'Revisão e flashcards',tutor:'Tutor IA',settings:'Configurações'}[view]||view);document.querySelector('.sidebar').classList.remove('open');const render={dashboard:renderDashboard,agenda:renderAgenda,library:renderLibrary,questions:renderQuestions,review:renderReview,tutor:renderTutor,settings:renderSettings};(render[view]||renderDashboard)();window.scrollTo({top:0,behavior:'instant'});}
-function dashboardToday(){let plan=calcPlan(),t=today(),past=plan.filter(x=>!x.rest&&x.date<t&&!dayDone(x.date));return past[0]||plan.find(x=>x.date>=t&&!x.rest)||plan.find(x=>!x.rest)}
+
+function dashboardToday(){const plan=calcPlan();return plan[0]||null}
 const done=o=>!!o;
-function dayProgress(day){if(!day||day.rest)return{read:0,quiz:false,flash:false};let seen=state.read[day.id]||[],count=0;for(let p=day.start;p<=day.end;p++)if(seen.includes(p))count++;let v=state.agenda[day.date]||{};return{read:count,quiz:!!v.quiz,flash:!!v.flash}}
-function dayDone(date){let day=calcPlan().find(x=>x.date===date);if(!day||day.rest)return false;let p=dayProgress(day);return p.read===day.pages&&p.quiz&&p.flash}
+function dayProgress(day){
+ if(!day||day.rest)return {read:0,quiz:false,flash:false};
+ const p=docState(day.id);
+ return {read:p.completedAt?day.pages:0,quiz:!!p.quiz,flash:!!p.flash};
+}
+function dayDone(date){let d=calcPlan().find(x=>x.date===date);return d?docFinished(d.id):false}
 function nextStage(day){let p=dayProgress(day);return p.read<day.pages?'read':!p.quiz?'quiz':!p.flash?'flash':'finished'}
+
 function renderDashboard(){let m=metric(),day=dashboardToday(),status=day?nextStage(day):'finished',p=day?dayProgress(day):null;
  $('#main').innerHTML=`<div class="hero"><div><div class="eyebrow">SEU ESPAÇO DE PREPARAÇÃO</div><h1>Um plano de cada vez.<br>Uma conquista por dia.</h1><p>Treinamento direcionado à Transpetro — Ênfase 31: Psicologia. Leitura guiada, questões autorais, revisões e resultados em um só lugar.</p><button class="btn gold" data-action="agenda">${day?'Continuar meu estudo →':'Ver minha agenda →'}</button></div><div class="hint-icon" style="font-size:95px;color:#d6b57b">Ψ</div></div>
  <div class="notice blue" style="margin-bottom:20px">🔐 <strong>${cloudUser?`Progresso sincronizado com a conta ${htmlSafe(cloudUser.email||"autenticada")}.`:"Projeto Supabase conectado. Entre por e-mail em Configurações para ativar a sincronização privada do progresso."}</strong> <button class="btn" data-action="settings" style="margin-left:10px">Minha conta →</button></div>
