@@ -135,8 +135,11 @@ const QUESTION_BANK = [
 const $=sel=>document.querySelector(sel);
 const htmlSafe=v=>String(v??'').replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]));
 const clone=o=>JSON.parse(JSON.stringify(o));
+const CLOUD_CONFIG={url:"https://nyfovlposbehjufececz.supabase.co",anonKey:"sb_publishable_KEbDgs4iSTDVaQkfIp5qwQ_TsqDE3LZ"};
+const GOOGLE_OAUTH_READY=false;
 const key='psicopita-estuda-v3';
-const today=()=>{const x=new Date();return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`};
+const APP_TIMEZONE='America/Manaus';
+const today=()=>{const parts=new Intl.DateTimeFormat('en-US',{timeZone:APP_TIMEZONE,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const v=Object.fromEntries(parts.filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));return v.year+'-'+v.month+'-'+v.day};
 const dateOf=s=>new Date(s+'T12:00:00');
 const stepDate=(s,days)=>{let d=dateOf(s);d.setDate(d.getDate()+days);return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
 const formatDay=s=>dateOf(s).toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'});
@@ -182,9 +185,10 @@ function dayDone(date){let day=calcPlan().find(x=>x.date===date);if(!day||day.re
 function nextStage(day){let p=dayProgress(day);return p.read<day.pages?'read':!p.quiz?'quiz':!p.flash?'flash':'finished'}
 function renderDashboard(){let m=metric(),day=dashboardToday(),status=day?nextStage(day):'finished',p=day?dayProgress(day):null;
  $('#main').innerHTML=`<div class="hero"><div><div class="eyebrow">SEU ESPAÇO DE PREPARAÇÃO</div><h1>Um plano de cada vez.<br>Uma conquista por dia.</h1><p>Treinamento direcionado à Transpetro — Ênfase 31: Psicologia. Leitura guiada, questões autorais, revisões e resultados em um só lugar.</p><button class="btn gold" data-action="agenda">${day?'Continuar meu estudo →':'Ver minha agenda →'}</button></div><div class="hint-icon" style="font-size:95px;color:#d6b57b">Ψ</div></div>
- <div class="grid four" style="margin-bottom:24px"><div class="card"><div class="metric-icon">▤</div><div class="metric-label">Páginas confirmadas</div><div class="metric-number">${m.readPages}</div><div class="metric-note">de ${m.total.toLocaleString('pt-BR')} páginas planejáveis</div></div><div class="card"><div class="metric-icon">☷</div><div class="metric-label">Questões respondidas</div><div class="metric-number">${m.answered}</div><div class="metric-note">${m.accuracy??'—'}% de acertos</div></div><div class="card"><div class="metric-icon">◇</div><div class="metric-label">Flashcards revisados</div><div class="metric-number">${m.flash}</div><div class="metric-note">memorização ativa</div></div><div class="card"><div class="metric-icon">▤</div><div class="metric-label">Materiais cadastrados</div><div class="metric-number">${catalog.length}</div><div class="metric-note">${Object.keys(state.files).length} PDFs enviados neste navegador</div></div></div>
+ <div class="notice blue" style="margin-bottom:20px">🔐 <strong>${cloudUser?`Progresso sincronizado com a conta ${htmlSafe(cloudUser.email||"autenticada")}.`:"Projeto Supabase conectado. Entre por e-mail em Configurações para ativar a sincronização privada do progresso."}</strong> <button class="btn" data-action="settings" style="margin-left:10px">Minha conta →</button></div>
+ <div class="grid four" style="margin-bottom:24px"><div class="card"><div class="metric-icon">▤</div><div class="metric-label">Páginas confirmadas</div><div class="metric-number">${m.readPages}</div><div class="metric-note">de ${m.total.toLocaleString('pt-BR')} páginas planejáveis</div></div><div class="card"><div class="metric-icon">☷</div><div class="metric-label">Questões respondidas</div><div class="metric-number">${m.answered}</div><div class="metric-note">${m.accuracy??'—'}% de acertos</div></div><div class="card"><div class="metric-icon">◇</div><div class="metric-label">Flashcards revisados</div><div class="metric-number">${m.flash}</div><div class="metric-note">memorização ativa</div></div><div class="card"><div class="metric-icon">▤</div><div class="metric-label">Materiais cadastrados</div><div class="metric-number">${catalog.length}</div><div class="metric-note">${Object.keys(GOOGLE_DRIVE_MAP).length} vinculados ao Google Drive</div></div></div>
  <div class="grid maincol"><div class="card"><div class="sectionline"><h2>O que estudar hoje?</h2><span class="badge goldish">${day?htmlSafe(formatDay(day.date)):'A definir'}</span></div>${day?`<p><strong>${htmlSafe(day.area)}</strong> · ${htmlSafe(day.title)}</p><p class="muted small">Páginas ${day.start} a ${day.end} · ${day.pages} páginas de meta</p>${progress(p.read,day.pages)}<div class="stage-summary"><span>${p.read}/${day.pages} páginas</span><span>${p.quiz?'✓':'○'} 10 questões</span><span>${p.flash?'✓':'○'} 5 flashcards</span></div><div class="notice blue">Próxima etapa: <strong>${status==='read'?'Leitura das páginas do dia':status==='quiz'?'Questões do assunto':status==='flash'?'Revisão com flashcards':'Concluído'}</strong>. Páginas só entram no progresso ao serem confirmadas por você.</div><button class="btn primary" data-action="resume">${status==='finished'?'Ver agenda':'Retomar atividade →'}</button>`:`<div class="empty">Configure seus dias e horas na área de configurações.</div>`}</div>
- <div class="card"><h3>Meu desempenho</h3>${subjects.map(a=>{let docs=primaryDocs().filter(d=>d.area===a),total=docs.reduce((s,d)=>s+d.pages,0),n=docs.reduce((s,d)=>s+(state.read[d.id]||[]).length,0);return `<div class="subject"><div class="subhead"><span>${a}</span><span class="subject-pill">${n}/${total} págs.</span></div>${progress(n,total)}</div>`}).join('')}<div class="divider"></div><p class="small muted">As apostilas enviadas são carregadas só no seu navegador, até que seja configurada uma conta privada no Supabase.</p><button class="btn" data-action="library">Abrir biblioteca →</button></div></div>`;
+ <div class="card"><h3>Meu desempenho</h3>${subjects.map(a=>{let docs=primaryDocs().filter(d=>d.area===a),total=docs.reduce((s,d)=>s+d.pages,0),n=docs.reduce((s,d)=>s+(state.read[d.id]||[]).length,0);return `<div class="subject"><div class="subhead"><span>${a}</span><span class="subject-pill">${n}/${total} págs.</span></div>${progress(n,total)}</div>`}).join('')}<div class="divider"></div><p class="small muted">As apostilas estão vinculadas ao seu Google Drive. Para sincronizar leituras, questões e revisões entre dispositivos, entre na sua conta na seção Configurações.</p><button class="btn" data-action="library">Abrir biblioteca →</button></div></div>`;
 }
 function renderAgenda(){let all=calcPlan(),start=today(),weeks=all.filter(x=>x.date>=stepDate(start,-7)).slice(0,35),pending=all.filter(x=>!x.rest&&x.date<start&&!dayDone(x.date)),focus=pending[0]||all.find(x=>x.date>=start&&!x.rest),days=weeks.slice(0,21);
  $('#main').innerHTML=header('Minha agenda de estudos','Cronograma automático de leitura, questões e revisões com base nas suas horas e dias disponíveis.',`<button class="btn" data-action="settings">Ajustar disponibilidade ⚙</button>`)+`<div class="notice blue">A distribuição prioriza Psicologia pela maior quantidade de questões específicas. Se houver etapas pendentes, o sistema oferece a atividade mais antiga antes de avançar no roteiro.</div>${pending.length?`<div class="notice">Você tem <strong>${pending.length} dia(s) pendente(s)</strong>. A retomada começará pelo mais antigo, sem registrar tarefas não realizadas como concluídas.</div>`:''}<div class="grid maincol"><div class="card"><div class="sectionline"><h2>Roteiro em foco</h2><span class="badge">${focus?.date||''}</span></div>${focus?renderDayDetail(focus):'<div class="empty">Não foram geradas atividades.</div>'}</div><div class="card"><h3>Próximos dias</h3>${days.map(d=>`<div class="agenda-item ${d.rest?'':'current'} ${dayDone(d.date)?'complete':''}"><div class="step-number">${dateOf(d.date).getDate()}</div><div><h4>${d.rest?'Descanso':htmlSafe(d.area)}</h4><p>${d.rest?'Dia sem estudo programado':`${htmlSafe(d.title).slice(0,54)} · págs. ${d.start}–${d.end}`}</p></div>${dayDone(d.date)?'<span class="done">✓</span>':d.rest?'':`<button class="btn" data-date="${d.date}" data-action="day">Abrir</button>`}</div>`).join('')}</div></div>`;
@@ -296,19 +300,117 @@ function nextFlash(){let fs=flashSession,c=fs.cardList[fs.at];state.flash[`${fs.
 function finishCards(){if(flashSession?.day){state.agenda[flashSession.day]=state.agenda[flashSession.day]||{};state.agenda[flashSession.day].flash=true;persist();toast('Roteiro diário concluído!')}flashSession=null;show(flashSession?'review':'dashboard')}
 function renderTutor(){let active=!!(cloudClient&&cloudUser);$('#main').innerHTML=header('Tutor de inteligência artificial','Assistente para tirar dúvidas de Português, Inglês e Psicologia, conectado por backend seguro.')+`<div class="card" style="max-width:820px"><div class="tutor-chat" id="tutorOutput"><div><div class="hint-icon">✧</div><h3>${active?'Tutor IA · verificar conexão do servidor':'Tutor IA — aguardando configuração'}</h3><p>${active?'Você está autenticado. O assistente responderá quando a função segura study-tutor estiver publicada no seu Supabase, com chave de IA configurada.':'Para ativar o tutor, conecte sua conta ao Supabase em Configurações, publique a função protegida study-tutor e configure o provedor de IA no servidor.'}</p><p>O tutor ainda não pesquisa nos seus PDFs automaticamente nem deve citar páginas que não consultou.</p></div></div>${active?`<div style="margin-top:16px;display:grid;gap:10px"><label for="tutorQuestion" class="small">Escreva sua dúvida</label><textarea id="tutorQuestion" placeholder="Ex.: Explique a diferença entre clima e cultura organizacional com um exemplo" rows="4" style="width:100%;padding:13px;border:1px solid #d7e4e6;border-radius:12px;font:inherit"></textarea><button class="btn primary" data-action="askTutor">Perguntar ao tutor →</button></div>`:`<button class="btn" data-action="settings">Configurar Supabase →</button>`}</div><div class="notice">Nunca informe uma chave secreta de IA no navegador. Perguntas são enviadas à função autenticada quando o tutor estiver configurado.</div>`}
 async function askTutor(){if(!cloudClient||!cloudUser){toast('Entre com sua conta para usar o tutor.');return}let question=$('#tutorQuestion')?.value.trim();if(!question||question.length<5){toast('Digite uma pergunta com pelo menos cinco caracteres.');return}const el=$('#tutorOutput');el.textContent='Consultando tutor com segurança…';let button=document.querySelector('[data-action="askTutor"]');button.disabled=true;try{let {data,error}=await cloudClient.functions.invoke('study-tutor',{body:{question}});if(error)throw Error(error.message);if(!data?.reply)throw Error(data?.error||'Tutor não disponível.');el.innerHTML=`<div style="width:100%;text-align:left"><p class="small muted"><strong>Sua dúvida</strong>: ${htmlSafe(question)}</p><div class="divider"></div><div class="small" style="white-space:pre-wrap;line-height:1.8;color:#234451">${htmlSafe(data.reply)}</div></div>`}catch(e){el.innerHTML=`<div><h3>Tutor ainda indisponível</h3><p>Não foi possível obter resposta. Verifique a implantação da função study-tutor e o segredo do provedor de IA no Supabase.</p><p class="small muted">As atividades de leitura e questões permanecem disponíveis.</p></div>`}finally{button.disabled=false}}
-function renderSettings(){let v=state.settings,cfg=JSON.parse(localStorage.getItem('psicopita-cloud-config')||'{}');$('#main').innerHTML=header('Configurações','Personalize o seu cronograma e, quando estiver disponível, conecte uma conta ao banco de dados privado.')+`<div class="grid two"><div class="card"><h3>Disponibilidade de estudo</h3><form id="studySettings" class="settings-form"><label>Início do plano<input type="date" name="startDate" value="${htmlSafe(v.startDate)}" required></label><label>Minutos por dia<input type="number" min="30" max="480" step="15" name="minutes" value="${v.minutes}"></label><label>Ritmo de leitura (páginas/hora)<input type="number" min="3" max="30" name="pagesPerHour" value="${v.pagesPerHour}"></label><label>Dias de estudo</label><div class="day-grid">${['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map((name,i)=>`<label><input type="checkbox" name="day" value="${i}" ${v.days.includes(i)?'checked':''}>${name}</label>`).join('')}</div><button class="btn primary" type="submit">Salvar e recalcular agenda</button></form></div><div class="card"><h3>Meus dados</h3><p class="small muted">Seu progresso é salvo neste navegador. Faça uma cópia para restaurar em outro computador antes de usar sincronização em nuvem.</p><div class="toolbar"><button class="btn" data-action="export">Exportar progresso</button><button class="btn" data-action="import">Importar progresso</button></div><div class="notice blue">Estado da nuvem: <strong>${cloudUser?'Conectado como '+htmlSafe(cloudUser.email):cloudClient?'Cliente configurado, aguardando login':'Não configurado'}</strong>.</div><h3>Sincronização com Supabase</h3><p class="small muted">Utilize apenas a URL e a chave pública (anon/publishable) do projeto. A sincronização requer que as políticas privadas do banco de dados estejam configuradas.</p><form class="settings-form" id="cloudSettings"><label>URL pública do projeto<input name="url" placeholder="https://xxxx.supabase.co" value="${htmlSafe(cfg.url||'')}"></label><label>Chave pública anon/publishable<input type="password" name="anonKey" placeholder="Chave pública (nunca service_role)" value="${htmlSafe(cfg.anonKey||'')}"></label><button class="btn" type="submit">Salvar conexão</button></form>${cloudClient?`<div style="margin-top:20px"><input id="cloudEmail" type="email" placeholder="Seu e-mail" style="padding:10px;border:1px solid #d7e4e6;border-radius:10px;width:65%"><button class="btn primary" data-action="login">Entrar por e-mail</button><button class="btn gold" data-action="loginGoogle">Entrar com Google</button>${cloudUser?'<button class="btn" data-action="logout">Sair</button>':''}</div>`:''}</div></div>`;
- $('#studySettings').onsubmit=e=>{e.preventDefault();let fd=new FormData(e.target),days=fd.getAll('day').map(Number);if(!days.length){toast('Escolha ao menos um dia para estudar.');return}state.settings={startDate:fd.get('startDate'),minutes:Math.min(480,Math.max(30,Number(fd.get('minutes'))||90)),pagesPerHour:Math.min(30,Math.max(3,Number(fd.get('pagesPerHour'))||8)),days};persist();toast('Agenda recalculada!');show('agenda')};
- $('#cloudSettings').onsubmit=async e=>{e.preventDefault();let f=new FormData(e.target),url=String(f.get('url')).trim(),anonKey=String(f.get('anonKey')).trim();if(anonKey.toLowerCase().includes('service_role')){toast('Nunca utilize a chave service_role no navegador.');return}localStorage.setItem('psicopita-cloud-config',JSON.stringify({url,anonKey}));await setupCloud();toast(cloudClient?'Conexão configurada. Faça login.':'Configuração salva; verifique URL, chave e conexão.');renderSettings()};
+function renderSettings(){
+ const v=state.settings;
+ const authenticated=!!(cloudUser&&cloudClient);
+ $('#main').innerHTML=header('Configurações','Organize sua rotina no fuso de Manaus e acompanhe a sincronização privada dos seus estudos.')+
+ `<div class="grid two"><div class="card"><h3>Disponibilidade de estudo</h3>
+ <p class="small muted">Agenda no fuso America/Manaus (UTC−4). O servidor Supabase está em São Paulo.</p>
+ <form id="studySettings" class="settings-form">
+ <label>Início do plano<input type="date" name="startDate" value="${htmlSafe(v.startDate)}" required></label>
+ <label>Minutos por dia<input type="number" min="30" max="480" step="15" name="minutes" value="${v.minutes}"></label>
+ <label>Ritmo de leitura (páginas/hora)<input type="number" min="3" max="30" name="pagesPerHour" value="${v.pagesPerHour}"></label>
+ <label>Dias de estudo</label><div class="day-grid">${['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map((name,i)=>`<label><input type="checkbox" name="day" value="${i}" ${v.days.includes(i)?'checked':''}>${name}</label>`).join('')}</div>
+ <button class="btn primary" type="submit">Salvar e recalcular agenda</button></form></div>
+ <div class="card"><h3>Minha conta e sincronização</h3>
+ <div class="notice blue"><strong>${authenticated?'✓ Autenticado':'✓ Supabase conectado'}</strong><p class="small">${authenticated?'Conta: '+htmlSafe(cloudUser.email||cloudUser.id)+' — seus dados podem ser sincronizados entre dispositivos.':'O banco privado está configurado. Entre para manter seu progresso entre computador e celular.'}</p></div>
+ ${authenticated?`<button class="btn" data-action="logout">Sair da conta</button>`:
+ `<label class="small" for="cloudEmail">Entrar por e-mail</label><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+ <input id="cloudEmail" type="email" autocomplete="email" placeholder="Seu e-mail" style="padding:10px;border:1px solid #d7e4e6;border-radius:10px;flex:1;min-width:190px">
+ <button class="btn primary" data-action="login">Receber link de acesso</button></div>
+ <p class="small muted">Um link é enviado ao seu e-mail. O redirecionamento para este site precisa estar autorizado no Supabase.</p>`}
+ <div class="divider"></div><h3>Entrar com Google</h3>
+ <p class="small muted">A conta Google será usada apenas para autenticação. Os arquivos originais permanecem privados no Google Drive, sem precisar de outro upload.</p>
+ ${GOOGLE_OAUTH_READY?'<button class="btn gold" data-action="loginGoogle">Entrar com Google</button>':'<button class="btn gold" disabled title="Aguardando credenciais OAuth do Google">Login Google — configuração pendente</button>'}
+ <p class="small muted">A ativação exige um cliente OAuth no Google Cloud e habilitação do provedor Google no Supabase. Não envie segredos de autenticação pelo chat nem os coloque no GitHub.</p>
+ <a class="btn" href="https://supabase.com/dashboard/project/nyfovlposbehjufececz/auth/providers" target="_blank" rel="noopener noreferrer">Ver autenticação no Supabase ↗</a>
+ <div class="divider"></div><h3>Biblioteca particular</h3>
+ <p class="small muted">54 PDFs já vinculados à sua pasta Google Drive. Para abrir os documentos, o navegador deve estar conectado à conta Google que possui acesso.</p>
+ <button class="btn" data-action="library">Abrir biblioteca</button>
+ <div class="divider"></div><h3>Backup dos estudos</h3>
+ <p class="small muted">Se não estiver autenticado, o progresso continua salvo somente neste navegador.</p>
+ <div class="toolbar"><button class="btn" data-action="export">Exportar progresso</button><button class="btn" data-action="import">Importar progresso</button></div></div></div>`;
+ $('#studySettings').onsubmit=e=>{e.preventDefault();let fd=new FormData(e.target),days=fd.getAll('day').map(Number);
+ if(!days.length){toast('Escolha pelo menos um dia para estudar.');return}
+ state.settings={startDate:fd.get('startDate'),minutes:Math.min(480,Math.max(30,Number(fd.get('minutes'))||90)),pagesPerHour:Math.min(30,Math.max(3,Number(fd.get('pagesPerHour'))||8)),days};
+ persist();toast('Agenda recalculada!');show('agenda');
+ };
 }
 function exportData(){let copy=clone(state);delete copy.session;const blob=new Blob([JSON.stringify({app:'PsicoPita Estuda IA',exportedAt:nowIso(),state:copy},null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='psicopita-progresso.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
-function importData(file){file.text().then(txt=>{let a=JSON.parse(txt);if(a.app!=='PsicoPita Estuda IA'||!a.state?.settings)throw Error('Formato inválido');state={...clone(DEFAULT),...a.state};persist();toast('Progresso restaurado. PDFs precisam ser carregados em cada dispositivo.');show('dashboard')}).catch(()=>toast('Não foi possível importar este arquivo.'))}
-async function setupCloud(){let cfg=JSON.parse(localStorage.getItem('psicopita-cloud-config')||'{}');if(!cfg.url||!cfg.anonKey||!/^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/i.test(cfg.url)||!window.supabase?.createClient){cloudClient=null;return}try{cloudClient=window.supabase.createClient(cfg.url,cfg.anonKey,{auth:{persistSession:true,autoRefreshToken:true}});let {data}=await cloudClient.auth.getUser();cloudUser=data.user||null;if(cloudUser)await syncDown();cloudClient.auth.onAuthStateChange(async(_event,session)=>{cloudUser=session?.user||null;if(cloudUser)await syncDown();if(currentView==='settings')renderSettings()})}catch(e){cloudClient=null;cloudUser=null}}
-async function loginGoogle(){if(!cloudClient){toast('Para entrar no PsicoPita com Google, falta configurar o Supabase e o provedor Google. Você já pode abrir seus PDFs no Drive.');return}const {error}=await cloudClient.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname}});if(error)toast('Falha no login Google: '+error.message)}
-async function login(){if(!cloudClient){toast('Configure Supabase primeiro.');return}let email=$('#cloudEmail')?.value.trim();if(!email?.includes('@')){toast('Informe um e-mail válido.');return}let {error}=await cloudClient.auth.signInWithOtp({email,emailRedirectTo:location.origin+location.pathname});toast(error?'Falha: '+error.message:'Verifique seu e-mail para entrar com segurança.')}
-async function syncDown(){if(!cloudClient||!cloudUser)return;try{let {data,error}=await cloudClient.from('study_state').select('payload,updated_at').eq('user_id',cloudUser.id).maybeSingle();if(error)throw error;if(data?.payload&&data.updated_at>state.updatedAt){state={...clone(DEFAULT),...data.payload};persist();toast('Progresso sincronizado com a nuvem.');show(currentView)}else await syncUp()}catch{toast('Sincronização indisponível. Verifique a configuração privada do Supabase.')}}
-async function syncUp(){if(!cloudClient||!cloudUser)return;let copy=clone(state);try{let {error}=await cloudClient.from('study_state').upsert({user_id:cloudUser.id,payload:copy,updated_at:nowIso()},{onConflict:'user_id'});if(error)throw error}catch(e){console.warn('Sync não disponível',e.message)}}
+function importData(file){file.text().then(txt=>{let a=JSON.parse(txt);if(a.app!=='PsicoPita Estuda IA'||!a.state?.settings)throw Error('Formato inválido');state={...clone(DEFAULT),...a.state};persist();toast('Progresso restaurado. Os PDFs já estão vinculados ao Google Drive.');show('dashboard')}).catch(()=>toast('Não foi possível importar este arquivo.'))}
+async function setupCloud(){
+ if(!window.supabase?.createClient){cloudClient=null;cloudUser=null;console.warn('Biblioteca Supabase JS indisponível');return}
+ try{
+  cloudClient=window.supabase.createClient(CLOUD_CONFIG.url,CLOUD_CONFIG.anonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+  const {data,error}=await cloudClient.auth.getUser();
+  if(error&&error.name!=='AuthSessionMissingError')console.warn('Verificação de conta',error.message);
+  cloudUser=data?.user||null;
+  cloudClient.auth.onAuthStateChange((event,session)=>{
+   const next=session?.user||null;
+   const changed=cloudUser?.id!==next?.id;
+   cloudUser=next;
+   // Não executar chamadas Supabase dentro do callback de autenticação.
+   setTimeout(async()=>{
+    if(cloudUser&&(changed||event==='SIGNED_IN'||event==='INITIAL_SESSION'))await syncDown();
+    if(currentView==='settings')renderSettings();
+    else if(currentView==='dashboard')renderDashboard();
+   },0);
+  });
+  if(cloudUser)await syncDown();
+ }catch(e){console.warn('Supabase indisponível',e);cloudClient=null;cloudUser=null}
+}
+async function loginGoogle(){
+ if(!cloudClient){toast('Sincronização indisponível.');return}
+ if(!GOOGLE_OAUTH_READY){toast('O provedor Google ainda precisa ser autorizado no Supabase.');return}
+ const {error}=await cloudClient.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname,scopes:'openid email profile'}});
+ if(error)toast('Falha no login Google: '+error.message);
+}
+async function login(){
+ if(!cloudClient){toast('Serviço de login indisponível.');return}
+ const email=$('#cloudEmail')?.value.trim();
+ if(!email||!email.includes('@')){toast('Informe um e-mail válido.');return}
+ const {error}=await cloudClient.auth.signInWithOtp({email,options:{emailRedirectTo:location.origin+location.pathname}});
+ toast(error?'Falha no login: '+error.message:'Link solicitado. Verifique sua caixa de e-mail e spam.');
+}
+let syncDownPromise=null;
+async function syncDown(){
+ if(!cloudClient||!cloudUser)return;
+ if(syncDownPromise)return syncDownPromise;
+ syncDownPromise=(async()=>{
+  try{
+   const user=cloudUser;
+   const owner=localStorage.getItem('psicopita-account-owner');
+   if(owner&&owner!==user.id){
+    state=clone(DEFAULT);
+    localStorage.setItem(key,JSON.stringify(state));
+   }
+   localStorage.setItem('psicopita-account-owner',user.id);
+   const {data,error}=await cloudClient.from('study_state').select('payload,updated_at').eq('user_id',user.id).maybeSingle();
+   if(error)throw error;
+   if(cloudUser?.id!==user.id)return;
+   const remoteTime=Date.parse(data?.updated_at||'')||0;
+   const localTime=Date.parse(state.updatedAt||'')||0;
+   if(data?.payload&&(remoteTime>localTime||!localTime)){
+    state={...clone(DEFAULT),...data.payload,updatedAt:data.updated_at};
+    state.settings={...DEFAULT.settings,...(state.settings||{})};
+    localStorage.setItem(key,JSON.stringify(state));
+    if(currentView==='dashboard'||currentView==='agenda'||currentView==='settings')show(currentView);
+    toast('Progresso sincronizado com sua conta.');
+   }else if(localTime||!data){await syncUp();}
+  }catch(e){console.warn('Falha ao sincronizar progresso',e);toast('Sincronização pendente. Seu progresso continua salvo neste navegador.')}
+ })();
+ try{await syncDownPromise}finally{syncDownPromise=null}
+}
+async function syncUp(){
+ if(!cloudClient||!cloudUser)return;
+ const copy=clone(state); const uid=cloudUser.id;
+ try{
+  const {error}=await cloudClient.from('study_state').upsert({user_id:uid,payload:copy,updated_at:copy.updatedAt||nowIso()},{onConflict:'user_id'});
+  if(error)throw error;
+ }catch(e){console.warn('Sincronização com Supabase indisponível',e?.message||e)}
+}
 async function uploadCloudPDF(id,file){if(!cloudClient||!cloudUser)return;let {error}=await cloudClient.storage.from('study-pdfs').upload(`${cloudUser.id}/${id}.pdf`,file,{upsert:true,contentType:'application/pdf'});if(error)throw error}
-async function logout(){if(cloudClient)await cloudClient.auth.signOut();cloudUser=null;renderSettings()}
+async function logout(){if(cloudClient&&cloudUser)await syncUp();if(cloudClient)await cloudClient.auth.signOut();cloudUser=null;state=clone(DEFAULT);localStorage.setItem(key,JSON.stringify(state));renderSettings();toast('Você saiu da conta. Seus dados sincronizados continuam protegidos no Supabase.')}
 async function handleAction(b){let act=b.dataset.action;try{if(['dashboard','agenda','library','questions','review','tutor','settings'].includes(act)){state.session=act==='questions'?state.session:state.session;show(act);return}switch(act){case 'resume':resume();break;case 'day':startDay(b.dataset.date);break;case 'attach':attach(b.dataset.id);break;case 'bulkimport':bulkImport();break;case 'bulkchoose':await chooseBulk(Number(b.dataset.index));break;case 'reader':openReader(b.dataset.id,null);break;case 'prevpage':reader.page--;renderReader();break;case 'nextpage':reader.page++;renderReader();break;case 'markpage':markPage();break;case 'freeread':openReader(reader.id,null);break;case 'startquiz':startQuestions(b.dataset.area,10);break;case 'startsim':startQuestions(null,70,null,true);break;case 'answer':answer(b.dataset.choice);break;case 'nextquestion':state.session.at++;persist();renderQuestions();break;case 'stopquiz':state.session=null;persist();show('questions');break;case 'finishquiz':finishQuiz();break;case 'startcards':startFlash(b.dataset.area);break;case 'flipcard':flashSession.flipped=!flashSession.flipped;renderReview();break;case 'flashnext':nextFlash();break;case 'finishcards':finishCards();break;case 'export':exportData();break;case 'import':$('#restoreInput').click();break;case 'login':login();break;case 'loginGoogle':loginGoogle();break;case 'logout':logout();break;case 'askTutor':askTutor();break;default:break}}catch(e){console.error(e);toast('Não foi possível executar. Tente novamente.')}}
 async function start(){try{catalog=JSON.parse(document.getElementById('embedded-catalog').textContent)}catch{catalog=[];toast('Catálogo indisponível; abra o site pela hospedagem HTTP.')}document.body.addEventListener('click',e=>{let b=e.target.closest('[data-action]');if(b)handleAction(b)});document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.view)));$('#mobileMenu').onclick=()=>document.querySelector('.sidebar').classList.toggle('open');$('#pdfFileInput').addEventListener('change',e=>handlePdf(e.target.files[0]));$('#pdfBulkInput').addEventListener('change',e=>handleBulkPdfs(e.target.files));$('#restoreInput').addEventListener('change',e=>e.target.files[0]&&importData(e.target.files[0]));await setupCloud();show('dashboard')}
 start();
