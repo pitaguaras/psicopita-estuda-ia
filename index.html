@@ -871,8 +871,54 @@ function renderReview(){currentView='review';let fs=flashSession;if(!fs){$('#mai
 }
 function nextFlash(){let fs=flashSession,c=fs.cardList[fs.at];state.flash[`${fs.day||today()}-${c.id}`]=nowIso();fs.at++;fs.flipped=false;persist();renderReview()}
 function finishCards(){if(flashSession?.day){state.agenda[flashSession.day]=state.agenda[flashSession.day]||{};state.agenda[flashSession.day].flash=true;persist();toast('Roteiro diário concluído!')}flashSession=null;show(flashSession?'review':'dashboard')}
-function renderTutor(){let active=!!(cloudClient&&cloudUser);$('#main').innerHTML=header('Tutor de inteligência artificial','Assistente para tirar dúvidas de Português, Inglês e Psicologia, conectado por backend seguro.')+`<div class="card" style="max-width:820px"><div class="tutor-chat" id="tutorOutput"><div><div class="hint-icon">✧</div><h3>${active?'Tutor IA · verificar conexão do servidor':'Tutor IA — aguardando configuração'}</h3><p>${active?'Você está autenticado. O assistente responderá quando a função segura study-tutor estiver publicada no seu Supabase, com chave de IA configurada.':'Para ativar o tutor, conecte sua conta ao Supabase em Configurações, publique a função protegida study-tutor e configure o provedor de IA no servidor.'}</p><p>O tutor ainda não pesquisa nos seus PDFs automaticamente nem deve citar páginas que não consultou.</p></div></div>${active?`<div style="margin-top:16px;display:grid;gap:10px"><label for="tutorQuestion" class="small">Escreva sua dúvida</label><textarea id="tutorQuestion" placeholder="Ex.: Explique a diferença entre clima e cultura organizacional com um exemplo" rows="4" style="width:100%;padding:13px;border:1px solid #d7e4e6;border-radius:12px;font:inherit"></textarea><button class="btn primary" data-action="askTutor">Perguntar ao tutor →</button></div>`:`<button class="btn" data-action="settings">Configurar Supabase →</button>`}</div><div class="notice">Nunca informe uma chave secreta de IA no navegador. Perguntas são enviadas à função autenticada quando o tutor estiver configurado.</div>`}
-async function askTutor(){if(!cloudClient||!cloudUser){toast('Entre com sua conta para usar o tutor.');return}let question=$('#tutorQuestion')?.value.trim();if(!question||question.length<5){toast('Digite uma pergunta com pelo menos cinco caracteres.');return}const el=$('#tutorOutput');el.textContent='Consultando tutor com segurança…';let button=document.querySelector('[data-action="askTutor"]');button.disabled=true;try{let {data,error}=await cloudClient.functions.invoke('study-tutor',{body:{question}});if(error)throw Error(error.message);if(!data?.reply)throw Error(data?.error||'Tutor não disponível.');el.innerHTML=`<div style="width:100%;text-align:left"><p class="small muted"><strong>Sua dúvida</strong>: ${htmlSafe(question)}</p><div class="divider"></div><div class="small" style="white-space:pre-wrap;line-height:1.8;color:#234451">${htmlSafe(data.reply)}</div></div>`}catch(e){el.innerHTML=`<div><h3>Tutor ainda indisponível</h3><p>Não foi possível obter resposta. Verifique a implantação da função study-tutor e o segredo do provedor de IA no Supabase.</p><p class="small muted">As atividades de leitura e questões permanecem disponíveis.</p></div>`}finally{button.disabled=false}}
+function renderTutor(){
+ const active=!!(cloudClient&&cloudUser);
+ $('#main').innerHTML=header('Tutor de estudos','Revise conceitos de Português, Inglês e Psicologia no PsicoPita.')+
+ `<div class="card" style="max-width:900px"><div class="tutor-chat" id="tutorOutput">
+ <div style="max-width:720px"><div class="hint-icon">✧</div><h3>${active?'Tutor conectado ao Supabase':'Entre na sua conta para começar'}</h3>
+ <p>${active?'A função study-tutor está publicada. Faça sua pergunta e receba uma explicação, um exemplo e uma pergunta de revisão.':'Entre pela sua conta Google ou e-mail em Configurações para acessar o tutor.'}</p>
+ <p class="small muted"><strong>Importante:</strong> enquanto um modelo de IA não estiver habilitado no Supabase, as explicações disponíveis são textos de estudo previamente preparados, não respostas generativas.</p></div></div>
+ ${active?`<div style="margin-top:16px;display:grid;gap:10px">
+ <label for="tutorQuestion" class="small">Escreva sua dúvida</label>
+ <textarea id="tutorQuestion" maxlength="2000" rows="4" placeholder="Ex.: Defina clima organizacional e apresente um exemplo" style="width:100%;padding:13px;border:1px solid #d7e4e6;border-radius:12px;font:inherit"></textarea>
+ <button class="btn primary" data-action="askTutor">Perguntar ao tutor →</button></div>`:
+ `<button class="btn" data-action="settings">Entrar com minha conta →</button>`}</div>
+ <div class="notice blue">O tutor não lê automaticamente os PDFs privados do Google Drive. Para estudar um trecho específico, indique o assunto ou cole o fragmento relevante.</div>`;
+}
+
+async function askTutor(){
+ if(!cloudClient||!cloudUser){toast('Entre com sua conta para usar o tutor.');return}
+ const question=$('#tutorQuestion')?.value?.trim()||'';
+ if(question.length<5){toast('Digite uma pergunta com pelo menos cinco caracteres.');return}
+ const el=$('#tutorOutput'),button=document.querySelector('[data-action="askTutor"]');
+ if(!el||!button)return;
+ el.innerHTML='<div><h3>Consultando o tutor…</h3><p>Buscando a explicação do assunto.</p></div>';
+ button.disabled=true;button.textContent='Consultando…';
+ try{
+  const {data,error}=await cloudClient.functions.invoke('study-tutor',{body:{question}});
+  if(error){
+   let detail=error.message||'Falha de conexão.';
+   try{if(error.context?.json){const answer=await error.context.json();if(answer?.error)detail=answer.error;}}catch{}
+   throw Error(detail);
+  }
+  if(typeof data?.reply!=='string'||!data.reply.trim())throw Error('O serviço não retornou uma explicação.');
+  const generative=data.mode==='generative';
+  const label=generative?'Resposta de IA generativa':'Explicação preparada (sem IA generativa)';
+  const reply=htmlSafe(data.reply).replace(/\*\*([^*\n]+)\*\*/g,'<strong>$1</strong>');
+  el.innerHTML=`<div style="width:100%;text-align:left;max-width:830px">
+   <div class="split"><span class="badge ${generative?'goldish':''}">${label}</span>
+   <span class="small muted">${generative?htmlSafe(data.provider||'Provedor de IA'):'Conteúdo de estudo'}</span></div>
+   <p class="small muted" style="margin-top:12px"><strong>Sua dúvida:</strong> ${htmlSafe(question)}</p>
+   <div class="divider"></div>
+   <div style="white-space:pre-wrap;line-height:1.85;color:#234451;font-size:14px">${reply}</div>
+   ${data.notice?`<p class="small muted" style="margin-top:16px">${htmlSafe(data.notice)}</p>`:''}
+   </div>`;
+ }catch(e){
+  const message=String(e?.message||'Falha inesperada.').slice(0,420);
+  el.innerHTML=`<div><h3>O tutor não conseguiu responder</h3><p class="small muted">${htmlSafe(message)}</p>
+  <p>Se houver erro de autenticação, entre novamente com sua conta. Se houver falha de rede, tente atualizar o navegador.</p></div>`;
+ }finally{button.disabled=false;button.textContent='Perguntar ao tutor →';}
+}
 function renderSettings(){
  const v=state.settings;
  const authenticated=!!(cloudUser&&cloudClient);
