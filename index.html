@@ -262,7 +262,8 @@ function getExamQuestions(index){
  const book=examBlueprint();
  return book.map((f,i)=>{
   const rotate=(i*3+index*2)%5;
-  const options=f.o.map((_,j)=>f.o[(j-rotate+5)%5]);
+  const choices=f.vo?.[index]||f.o;
+  const options=choices.map((_,j)=>choices[(j-rotate+5)%5]);
   return {id:'benchmark-'+index+'-'+i,subject:f.subject,question:f.q[index],
    options,answer:(f.a+rotate)%5,explain:f.e,topic:f.t,sourceId:f.d,
    difficulty:f.level||3,blueprintId:f.blueprintId};
@@ -420,7 +421,7 @@ function renderDashboard(){
  <div class="notice ${f.possible?'green':''}" style="margin-bottom:18px"><strong>Conclusão das leituras até 5 de dezembro.</strong>
  ${f.neededDays?`Faltam ${f.remaining} páginas, distribuídas em ${f.neededDays} dias de leitura, até ${formatDay(f.last)}, respeitando ${f.cap} páginas diárias.`:'Todas as páginas das apostilas principais foram confirmadas.'}
  ${!f.possible?'O cálculo ultrapassa o prazo: ajuste seus dias disponíveis.':''}
- Dias exclusivos de simulado: ${benchmarkDates().map(x=>formatDay(x.date)).join(' · ')}.</div>
+ Dias exclusivos de simulado: ${benchmarkDates().map(x=>formatDay(x.date)).join(' · ')}. Prova oficial remarcada pela Transpetro para 6 de dezembro de 2026.</div>
  <div class="grid maincol"><div class="card">
  <div class="sectionline"><h2>Próxima atividade</h2><span class="badge goldish">${day?formatDay(day.date):'Plano concluído'}</span></div>
  ${!day?'<p>Leituras e simulados concluídos. Veja os resultados e prepare a revisão.</p>':
@@ -444,7 +445,7 @@ function renderAgenda(){
  '<button class="btn" data-action="settings">Ajustar horários ⚙</button>')+
  `<div class="notice blue"><strong>${f.remaining} páginas restantes, com até ${f.cap} páginas por dia de leitura.</strong>
  ${f.neededDays?`Meta de leitura prevista até ${formatDay(f.last)}.`:'Leitura principal concluída.'}
- Os três simulados têm 70 questões cada, dificuldade estruturada de forma equivalente e correção apenas ao final.</div>
+ Os três simulados têm 70 questões cada, dificuldade estruturada de forma equivalente e correção apenas ao final. Prova oficial: 6 de dezembro de 2026.</div>
  ${mockProgressPanel()}
  <div class="grid maincol"><div class="card"><h2>Atividade prioritária</h2>
  ${focus?renderDayDetail(focus):'<p>Não há atividades pendentes.</p>'}</div>
@@ -731,7 +732,7 @@ function renderMock(){
  }
  const q=questions[s.at],choice=s.results.find(r=>r.position===s.at);
  const date=benchmarkDates()[index];
- $('#main').innerHTML=header(MOCK_LABELS[index],`Etapa ${index+1}/3 · ${formatDay(date.date)} · avaliação diagnóstica sem feedback antecipado.`,
+ $('#main').innerHTML=header(MOCK_LABELS[index],`Etapa ${index+1}/3 · ${formatDay(date.date)} · gabarito liberado somente após a entrega.`,
  '<button class="btn" data-action="mockpause">Salvar e voltar à agenda</button>')+
  `<div class="card" style="max-width:980px">
  <div class="split"><span class="badge">${htmlSafe(q.subject)} · ${htmlSafe(q.topic)}</span>
