@@ -881,9 +881,40 @@ function renderTutor(){
  ${active?`<div style="margin-top:16px;display:grid;gap:10px">
  <label for="tutorQuestion" class="small">Escreva sua dúvida</label>
  <textarea id="tutorQuestion" maxlength="2000" rows="4" placeholder="Ex.: Defina clima organizacional e apresente um exemplo" style="width:100%;padding:13px;border:1px solid #d7e4e6;border-radius:12px;font:inherit"></textarea>
- <button class="btn primary" data-action="askTutor">Perguntar ao tutor →</button></div>`:
+ <div style="display:flex;flex-wrap:wrap;gap:9px;align-items:center"><button class="btn primary" data-action="askTutor">Perguntar ao tutor →</button><button class="btn" data-action="testTutor">Testar conexão da IA generativa</button></div><div id="tutorConnectionResult" class="small muted" role="status" aria-live="polite"></div></div>`:
  `<button class="btn" data-action="settings">Entrar com minha conta →</button>`}</div>
  <div class="notice blue">O tutor não lê automaticamente os PDFs privados do Google Drive. Para estudar um trecho específico, indique o assunto ou cole o fragmento relevante.</div>`;
+}
+
+async function testTutorConnection(){
+ if(!cloudClient||!cloudUser){toast("Faça login para testar o tutor.");return;}
+ const button=document.querySelector('[data-action="testTutor"]');
+ const output=document.getElementById("tutorConnectionResult");
+ if(!button||!output)return;
+ button.disabled=true;button.textContent="Testando o Gemini…";
+ output.textContent="Verificando as configurações e fazendo uma pergunta real ao modelo…";
+ try{
+  const {data,error}=await cloudClient.functions.invoke("study-tutor",{body:{diagnostic:true}});
+  if(error){
+   let msg=error.message||"Erro de conexão";
+   try{const x=await error.context?.json?.();if(x?.error)msg=x.error;}catch{}
+   throw Error(msg);
+  }
+  if(data?.ok){
+   output.innerHTML=`<p><strong>✓ IA generativa conectada!</strong> Provedor: ${htmlSafe(data.provider||"IA")}.</p>
+    <p class="small muted">O servidor conseguiu gerar uma resposta real do modelo. A chave privada permanece protegida no Supabase.</p>
+    ${data.answerPreview?`<p class="small"><strong>Resposta de teste:</strong> ${htmlSafe(data.answerPreview)}</p>`:""}`;
+  }else{
+   const configured=data?.enabled && data?.hasProviderKey;
+   const message=String(data?.error||"O provedor não retornou uma resposta.").slice(0,220);
+   output.innerHTML=`<p><strong>${configured?"⚠ O modelo foi configurado, mas não respondeu ao teste.":"Configuração do modelo incompleta."}</strong></p>
+    <p class="small muted">${htmlSafe(message)}</p>
+    <p class="small muted">${configured?"Confira as permissões, cotas e o modelo escolhido no Google AI Studio.":"No Supabase → Edge Functions → Secrets, confira AI_ENABLED=true e a existência de GEMINI_API_KEY."}</p>`;
+  }
+ }catch(e){
+  output.innerHTML=`<p><strong>Falha na verificação.</strong> ${htmlSafe(String(e?.message||e).slice(0,250))}</p>
+  <p class="small muted">Confirme que está autenticado e pressione Ctrl + F5 antes de tentar novamente.</p>`;
+ }finally{button.disabled=false;button.textContent="Testar conexão da IA generativa";}
 }
 
 async function askTutor(){
@@ -1030,7 +1061,7 @@ async function syncUp(){
 }
 async function uploadCloudPDF(id,file){if(!cloudClient||!cloudUser)return;let {error}=await cloudClient.storage.from('study-pdfs').upload(`${cloudUser.id}/${id}.pdf`,file,{upsert:true,contentType:'application/pdf'});if(error)throw error}
 async function logout(){if(cloudClient&&cloudUser)await syncUp();if(cloudClient)await cloudClient.auth.signOut();cloudUser=null;state=clone(DEFAULT);localStorage.setItem(key,JSON.stringify(state));renderSettings();toast('Você saiu da conta. Seus dados sincronizados continuam protegidos no Supabase.')}
-async function handleAction(b){let act=b.dataset.action;try{if(['dashboard','agenda','library','questions','review','tutor','settings'].includes(act)){state.session=act==='questions'?state.session:state.session;show(act);return}switch(act){case 'resume':resume();break;case 'mockexam':startMock(Number(b.dataset.index));break;case 'mockresult':renderMockResults(Number(b.dataset.index));break;case 'finalmock':finishMock();break;case 'mockpause':state.session=null;persist();show('agenda');break;case 'mockprev':if(state.session?.simIndex!==undefined){state.session.at=Math.max(0,state.session.at-1);persist();renderMock();}break;case 'day':startDay(b.dataset.date);break;case 'readchunk':openReader(b.dataset.id,b.dataset.date);break;case 'attach':attach(b.dataset.id);break;case 'bulkimport':bulkImport();break;case 'bulkchoose':await chooseBulk(Number(b.dataset.index));break;case 'reader':openReader(b.dataset.id,null);break;case 'prevpage':moveReaderPage(-1);break;case 'nextpage':moveReaderPage(1);break;case 'fullscreenreader':await readerFullscreen();break;case 'markpage':markPage();break;case 'completechunk':completeChunk();break;case 'markthrough':markThrough();break;case 'freeread':openReader(reader.id,null);break;case 'startquiz':startQuestions(b.dataset.area,10);break;case 'startsim':show('agenda');break;case 'answer':answer(b.dataset.choice);break;case 'nextquestion':if(state.session){state.session.at++;persist();renderQuestions();}break;case 'stopquiz':if(state.session?.simIndex!==undefined){state.session=null;persist();show('agenda')}else{state.session=null;persist();show('questions')}break;case 'finishquiz':finishQuiz();break;case 'startcards':startFlash(b.dataset.area);break;case 'flipcard':flashSession.flipped=!flashSession.flipped;renderReview();break;case 'flashnext':nextFlash();break;case 'finishcards':finishCards();break;case 'export':exportData();break;case 'import':$('#restoreInput').click();break;case 'login':login();break;case 'loginGoogle':loginGoogle();break;case 'logout':logout();break;case 'askTutor':askTutor();break;default:break}}catch(e){console.error(e);toast('Não foi possível executar. Tente novamente.')}}
+async function handleAction(b){let act=b.dataset.action;try{if(['dashboard','agenda','library','questions','review','tutor','settings'].includes(act)){state.session=act==='questions'?state.session:state.session;show(act);return}switch(act){case 'resume':resume();break;case 'mockexam':startMock(Number(b.dataset.index));break;case 'mockresult':renderMockResults(Number(b.dataset.index));break;case 'finalmock':finishMock();break;case 'mockpause':state.session=null;persist();show('agenda');break;case 'mockprev':if(state.session?.simIndex!==undefined){state.session.at=Math.max(0,state.session.at-1);persist();renderMock();}break;case 'day':startDay(b.dataset.date);break;case 'readchunk':openReader(b.dataset.id,b.dataset.date);break;case 'attach':attach(b.dataset.id);break;case 'bulkimport':bulkImport();break;case 'bulkchoose':await chooseBulk(Number(b.dataset.index));break;case 'reader':openReader(b.dataset.id,null);break;case 'prevpage':moveReaderPage(-1);break;case 'nextpage':moveReaderPage(1);break;case 'fullscreenreader':await readerFullscreen();break;case 'markpage':markPage();break;case 'completechunk':completeChunk();break;case 'markthrough':markThrough();break;case 'freeread':openReader(reader.id,null);break;case 'startquiz':startQuestions(b.dataset.area,10);break;case 'startsim':show('agenda');break;case 'answer':answer(b.dataset.choice);break;case 'nextquestion':if(state.session){state.session.at++;persist();renderQuestions();}break;case 'stopquiz':if(state.session?.simIndex!==undefined){state.session=null;persist();show('agenda')}else{state.session=null;persist();show('questions')}break;case 'finishquiz':finishQuiz();break;case 'startcards':startFlash(b.dataset.area);break;case 'flipcard':flashSession.flipped=!flashSession.flipped;renderReview();break;case 'flashnext':nextFlash();break;case 'finishcards':finishCards();break;case 'export':exportData();break;case 'import':$('#restoreInput').click();break;case 'login':login();break;case 'loginGoogle':loginGoogle();break;case 'logout':logout();break;case 'askTutor':askTutor();break;case 'testTutor':await testTutorConnection();break;default:break}}catch(e){console.error(e);toast('Não foi possível executar. Tente novamente.')}}
 async function start(){try{catalog=JSON.parse(document.getElementById('embedded-catalog').textContent)}catch{catalog=[];toast('Catálogo indisponível; abra o site pela hospedagem HTTP.')}document.body.addEventListener('click',e=>{let b=e.target.closest('[data-action]');if(b)handleAction(b)});document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.view)));$('#mobileMenu').onclick=()=>document.querySelector('.sidebar').classList.toggle('open');$('#pdfFileInput').addEventListener('change',e=>handlePdf(e.target.files[0]));$('#pdfBulkInput').addEventListener('change',e=>handleBulkPdfs(e.target.files));$('#restoreInput').addEventListener('change',e=>e.target.files[0]&&importData(e.target.files[0]));await setupCloud();show('dashboard')}
 start();
 
