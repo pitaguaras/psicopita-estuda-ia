@@ -162,6 +162,10 @@ const QUESTION_BANK = [
 ];
 
 </script>
+<script src="exam-general.js"></script>
+<script src="exam-psy-1.js"></script>
+<script src="exam-psy-2.js"></script>
+<script src="exam-psy-3.js"></script>
 <script>
 /* PsicoPita Estuda IA — aplicação estática. Nenhum PDF protegido é servido publicamente. */
 'use strict';
@@ -177,7 +181,7 @@ const dateOf=s=>new Date(s+'T12:00:00');
 const stepDate=(s,days)=>{let d=dateOf(s);d.setDate(d.getDate()+days);return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
 const formatDay=s=>dateOf(s).toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'});
 const nowIso=()=>new Date().toISOString();
-const DEFAULT={version:3,updatedAt:'',settings:{minutes:90,days:[1,2,3,4,5,6],startDate:today(),pagesPerHour:8,pagesPerDay:200},read:{},files:{},agenda:{},docProgress:{},planSnapshot:null,answers:[],simulations:[],flash:{},session:null};
+const DEFAULT={version:3,updatedAt:'',settings:{minutes:90,days:[1,2,3,4,5,6],startDate:today(),pagesPerHour:8,pagesPerDay:200},read:{},files:{},agenda:{},docProgress:{},planSnapshot:null,mockSessions:{},mockResults:{},answers:[],simulations:[],flash:{},session:null};
 let state;try{state=Object.assign(clone(DEFAULT),JSON.parse(localStorage.getItem(key)||'{}'));state.settings={...DEFAULT.settings,...(state.settings||{})};}catch{state=clone(DEFAULT)};
 const GOOGLE_DRIVE_MAP={"pt01":"1tk5xqy0mcsL1F6KpgIlF0LMlX10X4yje","pt02":"1-yZL2ExXq46uinj6-THddek432Yv2OnD","pt03":"1Qx_RT187fxxvSogxRG9YDBMLZeyp45Bh","pt04":"1PELy2_5kBLb9AUkAJTMVxRp4CMUllmo5","pt05":"1KJEmnNUxVVGkcBR-vdzTwIT0whgw_5oP","pt06":"1WNma_SRlnC17VLwh0yUDWHpQQBnyZmZm","pt07":"1Su7VKuDmzZijXmd9rcbw0y91_48ZNCu0","pt08":"1LrgI-6JQdfBHYu2F8a0OaUM7jW-oh6_L","pt09":"1aldPAvekPbpTfcJkSV1ydYtClRPI27Wv","pt10":"1Ghb0e461lyrq5lQetSaA3T2uvzxG_qKh","pt11":"1199KfzNiXwL2pHxIWeZa3AS8chkJdZKc","pt12":"1YMrWVpprp5sIpBmY-yIadBUMCNfWSyMw","pt13":"1ZwVej0ChkLlfxyru1f0i9PFDNVy6IcEm","pt14":"1wQxFHwGurMc83oajJQ87giUAlRglVk52","pt15":"1wmkB43d_JhCSO4Ql4DiM3K3uoO4AOP1j","pt16":"1oawGghLqzivqU3AiZfigqF-8LTulPYz_","pt17":"1Z80CdKlpElpShUuPxeajYvfOgUABZIld","pt18":"1pjCeeuxbLIQpRzBRVuycjWbWAuQ9Es9Z","pt19":"1WvsedeuQEQdplMVS0RH6X__Ve_DVWE1T","pt20":"1wM0fRmtmYk7BA9v5FiElpxlwC93kahnA","pt21":"1RatHcTHJnFOvlXEGFnTvrVqa813nT5gl","pt22":"1I25QsY7SxmUN6n1nS2zSEski4I1NsCVX","pt23":"1-OnR3Gf0EP5DeUoJc8Zdl4vpwm8Rj60e","pt24":"185dl7u49VLQIGkm5t30daZA0FV-KTmwG","pt25":"1sKrBSFJzWl_mpNaAL14FQGHH1NgV9fqc","pt26":"1bc3SVyDdGe3ydPKYnHBIzekJ2mI90UU4","cp01":"1FJNxVtzsSPjgq-LwjSCOuhewv7HqHln1","cp02":"10DHSalsE60Hdrhei5LoP_eZ4z-aDIWv6","cp03":"114ZB1zg7oPkk9O3j8ZB9TEt0Kk4_LGmh","cp04":"1itVInBlR1aCvx-h6Vebisl0Bsi2i4k44","cp05":"1t3NOYb1BsKlhghU9-kqcNEPrYFp4tNJi","cp06":"1UvyQehhb8LyguyFVvFHiZk7RugUdFeLF","cp07":"1RiN55Zlu1ivd8KDrEOqzdYDH_orxczTV","cp08":"1s5bTkQ21Y4Hb76VaRRfQFo4WY9txitBi","cp09":"1T-Wjee0rsWs82r6ZCgu_mGYo7ZxeTsqz","cp10":"1jP_gF1O67jlBkhPqbbLpfMM8GeJ2AzCE","cp11":"1H0V-IinJhpRrw2EeTz9o4s6NmeUcIciK","cp12":"1wsu-YCB-DT6n12LSzsaq_GvIwjfB6key","cp13":"1A2p80uqG49hSwvCb1KoYmksFOyctnHiK","cp14":"1OKOm9NWJ66Xmzm4reQJt3_fqF4S2PNfB","cp15":"1MZ-a1P4XeeVQAHCBV6PMCxVXvdZ26Ubu","cp16":"1bFQYKk0ioSrbuYo9b0AWfWhNaOoXw1SB","cp17":"1c2H5WkfZW6k_E1itWzSgav3moaUxdS5j","cp18":"1o-ApkC8R8YkLmB_9tQPYbMEasq13N5An","cp19":"10w4hdhp0S4rl4jGCnvSfdBDeLBmGEzYo","cp20":"1hpCuhEKbCmAyy6JRsujmZsfbC8yOZ7nZ","cp21":"1ZFyueRP95t3FZQNi_629lCVnz1-fMGag","cp22":"1C8heN1Mc8A2161ITTP_0auYG-uB_83bh","cp23":"1OHWSFatLxXtfxo_nEs9CoggQlTgOtdrk","cp24":"1aCvO7i4DDGT3pQzjIGLwooYSKlhcOPdE","cp25":"1M5QZbihXqq0IGTzpkDXRm8GtvYCZaT6n","cp26":"1lIh_GM8YR_KgQ1ARS2FKH9XFIG4RPMEA","cp27":"1xRhm_ky1cinG31RithcJDe19Aki5Jai0","vd01":"1qByPqyCwEsUa8e53jF7ofdIngSVqp5As"};
 const googleDocId=id=>GOOGLE_DRIVE_MAP[id]||null;
@@ -229,58 +233,93 @@ function unreadRuns(){
  }
  return runs;
 }
+
+const MOCK_LABELS=['Diagnóstico inicial','Avaliação intermediária','Avaliação final'];
+function benchmarkDates(){
+ const cfg=state.settings;
+ const allowed=Array.isArray(cfg.days)&&cfg.days.length?cfg.days:[1,2,3,4,5,6];
+ let first=cfg.startDate||today();
+ if(first<'2026-10-21')first='2026-10-21';
+ const last='2026-12-05';
+ if(first>=last)first='2026-10-21';
+ while(!allowed.includes(dateOf(first).getDay())&&first<last)first=stepDate(first,1);
+ const distance=Math.round((dateOf(last).getTime()-dateOf(first).getTime())/86400000);
+ let mid=stepDate(first,Math.floor(distance/2));
+ for(let i=0;i<7&&!allowed.includes(dateOf(mid).getDay());i++)mid=stepDate(mid,1);
+ if(mid===first||mid===last)mid=stepDate(first,Math.max(1,Math.floor(distance/2)-1));
+ return [{index:0,date:first,title:MOCK_LABELS[0]},{index:1,date:mid,title:MOCK_LABELS[1]},{index:2,date:last,title:MOCK_LABELS[2]}];
+}
+const EXAM_SUBJECTS=['Português','Inglês','Psicologia'];
+function examBlueprint(){
+ const parts=window.PSICOPITA_EXAM_PARTS||{};
+ return EXAM_SUBJECTS.flatMap(subject=>(parts[subject]||[]).map((item,i)=>({...item,subject,blueprintId:subject+'-'+i})));
+}
+function getExamQuestions(index){
+ if(![0,1,2].includes(index))return [];
+ const book=examBlueprint();
+ return book.map((f,i)=>{
+  const rotate=(i*3+index*2)%5;
+  const options=f.o.map((_,j)=>f.o[(j-rotate+5)%5]);
+  return {id:'benchmark-'+index+'-'+i,subject:f.subject,question:f.q[index],
+   options,answer:(f.a+rotate)%5,explain:f.e,topic:f.t,sourceId:f.d,
+   difficulty:f.level||3,blueprintId:f.blueprintId};
+ });
+}
+function examBlueprintReady(){
+ const q=getExamQuestions(0);
+ return q.length===70&&EXAM_SUBJECTS.every((a,i)=>q.filter(x=>x.subject===a).length===[10,10,50][i])
+  &&q.every(x=>x.options.length===5&&x.question&&x.explain);
+}
 function calcPlan(){
  const cfg=state.settings;
- const start=cfg.startDate||today();
+ const sims=benchmarkDates();
+ const booked=new Set(sims.map(x=>x.date));
+ const start=sims[0].date;
  const daysAvailable=Array.isArray(cfg.days)&&cfg.days.length?cfg.days:[1,2,3,4,5,6];
  const cap=Math.min(200,Math.max(1,Number(cfg.pagesPerDay)||200));
- const fingerprint=JSON.stringify({start,days:daysAvailable.slice().sort(),cap,version:4,books:primaryDocs().map(d=>[d.id,d.pages])});
+ const fingerprint=JSON.stringify({start,days:daysAvailable.slice().sort(),cap,version:5,
+  mocks:sims.map(d=>d.date),books:primaryDocs().map(d=>[d.id,d.pages])});
  if(state.planSnapshot?.fingerprint===fingerprint&&Array.isArray(state.planSnapshot.days))return state.planSnapshot.days;
- // A primeira migração desconsidera marcações antigas por data, mas preserva todas as páginas lidas.
- const original=unreadRuns();
- const total=original.reduce((sum,r)=>sum+r.pages,0);
+ const runs=unreadRuns();
+ const total=runs.reduce((sum,r)=>sum+r.pages,0);
  const dayCount=Math.ceil(total/cap);
- const base=dayCount?Math.floor(total/dayCount):0;
- const remainder=dayCount?total%dayCount:0;
- let pointer=0,position=0,date=start;
+ const base=dayCount?Math.floor(total/dayCount):0,remainder=dayCount?total%dayCount:0;
+ let pointer=0,offset=0,date=stepDate(start,1);
  const plan=[];
  for(let k=0;k<dayCount;k++){
-  while(!daysAvailable.includes(dateOf(date).getDay()))date=stepDate(date,1);
-  let remaining=base+(k<remainder?1:0);
-  const chunks=[];
-  while(remaining>0&&pointer<original.length){
-   const run=original[pointer];
-   const avail=run.pages-position;
-   const count=Math.min(remaining,avail);
-   const from=run.start+position;
+  while(!daysAvailable.includes(dateOf(date).getDay())||booked.has(date))date=stepDate(date,1);
+  let remaining=base+(k<remainder?1:0);const chunks=[];
+  while(remaining>0&&pointer<runs.length){
+   const run=runs[pointer],count=Math.min(remaining,run.pages-offset),from=run.start+offset;
    chunks.push({id:run.id,area:run.area,title:run.title,start:from,end:from+count-1,pages:count});
-   position+=count;remaining-=count;
-   if(position>=run.pages){pointer++;position=0}
+   remaining-=count;offset+=count;
+   if(offset>=run.pages){pointer++;offset=0}
   }
-  const unique=[...new Set(chunks.map(c=>c.area))];
-  plan.push({date,chunks,pages:chunks.reduce((sum,c)=>sum+c.pages,0),area:unique.join(' + '),
-   title:chunks.map(c=>c.title).join(' + '),rest:false});
+  plan.push({date,kind:'reading',chunks,pages:chunks.reduce((n,c)=>n+c.pages,0),
+   area:[...new Set(chunks.map(c=>c.area))].join(' + '),rest:false});
   date=stepDate(date,1);
  }
+ for(const sim of sims)plan.push({date:sim.date,kind:'simulation',simIndex:sim.index,
+  title:sim.title,pages:0,chunks:[],rest:false,area:'Simulado completo'});
+ plan.sort((a,b)=>a.date.localeCompare(b.date));
  state.planSnapshot={fingerprint,days:plan,createdAt:nowIso()};
+ // Cada nova estrutura de datas é recalculada, sem apagar páginas nem respostas existentes.
  state.agenda={};
  localStorage.setItem(key,JSON.stringify(state));
  return plan;
 }
 function feasibility(){
  const cfg=state.settings,deadline='2026-12-05';
- const docs=primaryDocs();
- const total=docs.reduce((sum,d)=>sum+d.pages,0);
- const seen=docs.reduce((sum,d)=>sum+confirmedPagesFor(d),0);
- const remaining=Math.max(0,total-seen);
+ const docs=primaryDocs(),total=docs.reduce((n,d)=>n+d.pages,0);
+ const seen=docs.reduce((n,d)=>n+confirmedPagesFor(d),0),remaining=Math.max(0,total-seen);
  const cap=Math.min(200,Math.max(1,Number(cfg.pagesPerDay)||200));
- const start=cfg.startDate||today();
- let dt=start,workDays=0;
- const available=Array.isArray(cfg.days)&&cfg.days.length?cfg.days:[1,2,3,4,5,6];
- while(dt<=deadline){if(available.includes(dateOf(dt).getDay()))workDays++;dt=stepDate(dt,1)}
- const plan=calcPlan(),last=plan.length?plan[plan.length-1].date:null;
- return {total,seen,remaining,docs:docs.length,workDays,cap,neededDays:plan.length,last,
-  requiredPagesPerDay:workDays?Math.ceil(remaining/workDays):null,
+ const sims=benchmarkDates(),reserved=new Set(sims.map(d=>d.date));
+ let dt=sims[0].date,workDays=0;
+ const allowed=Array.isArray(cfg.days)&&cfg.days.length?cfg.days:[1,2,3,4,5,6];
+ while(dt<=deadline){if(allowed.includes(dateOf(dt).getDay())&&!reserved.has(dt))workDays++;dt=stepDate(dt,1)}
+ const reads=calcPlan().filter(d=>d.kind==='reading'),last=reads.length?reads[reads.length-1].date:null;
+ return {total,seen,remaining,docs:docs.length,workDays,cap,neededDays:reads.length,last,
+  simulations:sims,requiredPagesPerDay:workDays?Math.ceil(remaining/workDays):null,
   possible:!last||last<=deadline,deadline};
 }
 
@@ -297,12 +336,11 @@ function header(title,subtitle,action=''){return `<div class="page-head"><div><d
 function show(view){currentView=view;document.querySelectorAll('.nav-btn[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view));$('#breadcrumb').innerHTML='Início <b>/</b> '+({dashboard:'Visão geral',agenda:'Agenda de estudos',library:'Minha biblioteca',questions:'Questões e simulados',review:'Revisão e flashcards',tutor:'Tutor IA',settings:'Configurações'}[view]||view);document.querySelector('.sidebar').classList.remove('open');const render={dashboard:renderDashboard,agenda:renderAgenda,library:renderLibrary,questions:renderQuestions,review:renderReview,tutor:renderTutor,settings:renderSettings};(render[view]||renderDashboard)();window.scrollTo({top:0,behavior:'instant'});}
 
 
-function dashboardToday(){
- const plan=calcPlan();
- return plan.find(day=>!dayDone(day.date))||null;
-}
+
+function dashboardToday(){return calcPlan().find(day=>!dayDone(day.date))||null}
 function dayProgress(day){
- if(!day)return {read:0,quiz:false,flash:false};
+ if(!day)return {read:0,quiz:false,flash:false,simulation:false};
+ if(day.kind==='simulation')return {read:0,quiz:false,flash:false,simulation:!!state.mockResults?.[day.simIndex]};
  let read=0;
  for(const c of day.chunks){
   const seen=new Set((state.read[c.id]||[]).map(Number));
@@ -310,18 +348,19 @@ function dayProgress(day){
   for(let p=c.start;p<=c.end;p++)if(seen.has(p))read++;
  }
  const status=state.agenda[day.date]||{};
- return {read,quiz:!!status.quiz,flash:!!status.flash};
+ return {read,quiz:!!status.quiz,flash:!!status.flash,simulation:false};
 }
 function dayDone(date){
  const day=calcPlan().find(d=>d.date===date);
  if(!day)return false;
- const p=dayProgress(day);
- return p.read===day.pages&&p.quiz&&p.flash;
+ if(day.kind==='simulation')return !!state.mockResults?.[day.simIndex];
+ const p=dayProgress(day);return p.read===day.pages&&p.quiz&&p.flash;
 }
 function nextStage(day){
- const p=dayProgress(day);
- return p.read<day.pages?'read':!p.quiz?'quiz':!p.flash?'flash':'finished';
+ if(day.kind==='simulation')return state.mockResults?.[day.simIndex]?'finished':'mock';
+ const p=dayProgress(day);return p.read<day.pages?'read':!p.quiz?'quiz':!p.flash?'flash':'finished';
 }
+
 function remainingChunk(day){
  return day?.chunks?.find(c=>{
   if(docState(c.id).completedAt)return false;
