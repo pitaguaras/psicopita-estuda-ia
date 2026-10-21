@@ -392,7 +392,7 @@ function mockProgressPanel(){
  <p class="muted small">${htmlSafe(formatDay(x.date))} · exclusivamente prova</p>
  <div class="metric-number">${result?correct+' / 70':'— / 70'}</div>
  ${progress(correct,70)}
- <p class="small muted">${result?'Português: '+result.bySubject.Português+'/10 · Inglês: '+result.bySubject.Inglês+'/10 · Psicologia: '+result.bySubject.Psicologia+'/50':'Aguardando realização'}</p>
+ <p class="small muted">${result?'Português: '+result.bySubject.Português+'/10 · Inglês: '+result.bySubject.Inglês+'/10 · Psicologia: '+result.bySubject.Psicologia+'/50':'Aguardando realização'}</p>${result?`<p class="small muted">Tempo registrado: ${Math.max(0,Math.round((new Date(result.finishedAt)-new Date(result.startedAt))/60000))} minutos</p>`:''}
  ${delta===null?'':`<strong style="color:${delta>=0?'#397e67':'#b15d52'}">${delta>=0?'+':''}${delta} pontos em relação ao anterior</strong>`}
  <button class="btn" data-action="${result?'mockresult':'mockexam'}" data-index="${x.index}" style="width:100%;margin-top:9px">
  ${result?'Ver resultado': 'Abrir simulado →'}</button></div>`}).join('')}</div></div>`;
@@ -802,12 +802,12 @@ function renderMockResults(index){
  `<div class="card" style="max-width:900px;margin-bottom:18px">
  <div class="eyebrow">PONTUAÇÃO DA ETAPA ${index+1}</div>
  <div class="metric-number">${r.correct} / ${r.total}</div>
- <p class="small muted">${Math.round(r.correct/r.total*100)}% de acertos · Data: ${formatDay(r.date)}.</p>
+ <p class="small muted">${Math.round(r.correct/r.total*100)}% de acertos · Data: ${formatDay(r.date)} · Duração: ${Math.max(0,Math.round((new Date(r.finishedAt)-new Date(r.startedAt))/60000))} minutos.</p>
  ${progress(r.correct,r.total)}
  ${delta===null?'<p>Primeira avaliação: este será o ponto de partida para medir sua evolução.</p>':
  `<p><strong>Variação em relação ao simulado anterior: ${delta>=0?'+':''}${delta} acertos.</strong></p>`}
  <div class="grid third">${byArea.map(([area,total])=>`<div><h3>${area}</h3>
- <div class="metric-number">${r.bySubject[area]} / ${total}</div>${progress(r.bySubject[area],total)}</div>`).join('')}</div>
+ <div class="metric-number">${r.bySubject[area]} / ${total}</div>${progress(r.bySubject[area],total)}${previous?`<p class="small muted">Variação: ${r.bySubject[area]-previous.bySubject[area]>=0?'+':''}${r.bySubject[area]-previous.bySubject[area]} acertos</p>`:''}</div>`).join('')}</div>
  <p class="small muted">Os três cadernos mantêm o mesmo perfil de dificuldades e distribuição das competências; a comparação é pedagógica, não equivalência estatística certificada.</p></div>
  ${mockProgressPanel()}
  <div class="card"><h3>Correção e justificativas</h3>
