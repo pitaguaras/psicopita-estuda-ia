@@ -136,7 +136,7 @@ const $=sel=>document.querySelector(sel);
 const htmlSafe=v=>String(v??'').replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]));
 const clone=o=>JSON.parse(JSON.stringify(o));
 const CLOUD_CONFIG={url:"https://nyfovlposbehjufececz.supabase.co",anonKey:"sb_publishable_KEbDgs4iSTDVaQkfIp5qwQ_TsqDE3LZ"};
-const GOOGLE_OAUTH_READY=false;
+const GOOGLE_OAUTH_READY=true;
 const key='psicopita-estuda-v3';
 const APP_TIMEZONE='America/Manaus';
 const today=()=>{const parts=new Intl.DateTimeFormat('en-US',{timeZone:APP_TIMEZONE,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const v=Object.fromEntries(parts.filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));return v.year+'-'+v.month+'-'+v.day};
@@ -321,8 +321,8 @@ function renderSettings(){
  <p class="small muted">Um link é enviado ao seu e-mail. O redirecionamento para este site precisa estar autorizado no Supabase.</p>`}
  <div class="divider"></div><h3>Entrar com Google</h3>
  <p class="small muted">A conta Google será usada apenas para autenticação. Os arquivos originais permanecem privados no Google Drive, sem precisar de outro upload.</p>
- ${GOOGLE_OAUTH_READY?'<button class="btn gold" data-action="loginGoogle">Entrar com Google</button>':'<button class="btn gold" disabled title="Aguardando credenciais OAuth do Google">Login Google — configuração pendente</button>'}
- <p class="small muted">A ativação exige um cliente OAuth no Google Cloud e habilitação do provedor Google no Supabase. Não envie segredos de autenticação pelo chat nem os coloque no GitHub.</p>
+ ${authenticated?'<p class="small">✓ Sessão autenticada.</p>':GOOGLE_OAUTH_READY?'<button class="btn gold" data-action="loginGoogle">Entrar com Google</button>':'<button class="btn gold" disabled>Login Google — configuração pendente</button>'}
+ <p class="small muted">Login Google habilitado para teste. Se o Google bloquear o acesso, confira sua conta em Google Cloud → Público → Usuários de teste. Não compartilhe segredos de autenticação nem os coloque no GitHub.</p>
  <a class="btn" href="https://supabase.com/dashboard/project/nyfovlposbehjufececz/auth/providers" target="_blank" rel="noopener noreferrer">Ver autenticação no Supabase ↗</a>
  <div class="divider"></div><h3>Biblioteca particular</h3>
  <p class="small muted">54 PDFs já vinculados à sua pasta Google Drive. Para abrir os documentos, o navegador deve estar conectado à conta Google que possui acesso.</p>
