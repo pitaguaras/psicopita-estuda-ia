@@ -165,92 +165,240 @@ const dateOf=s=>new Date(s+'T12:00:00');
 const stepDate=(s,days)=>{let d=dateOf(s);d.setDate(d.getDate()+days);return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
 const formatDay=s=>dateOf(s).toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'});
 const nowIso=()=>new Date().toISOString();
-const DEFAULT={version:3,updatedAt:'',settings:{minutes:90,days:[1,2,3,4,5,6],startDate:today(),pagesPerHour:8},read:{},files:{},agenda:{},docProgress:{},answers:[],simulations:[],flash:{},session:null};
+const DEFAULT={version:3,updatedAt:'',settings:{minutes:90,days:[1,2,3,4,5,6],startDate:today(),pagesPerHour:8,pagesPerDay:200},read:{},files:{},agenda:{},docProgress:{},planSnapshot:null,answers:[],simulations:[],flash:{},session:null};
 let state;try{state=Object.assign(clone(DEFAULT),JSON.parse(localStorage.getItem(key)||'{}'));state.settings={...DEFAULT.settings,...(state.settings||{})};}catch{state=clone(DEFAULT)};
 const GOOGLE_DRIVE_MAP={"pt01":"1tk5xqy0mcsL1F6KpgIlF0LMlX10X4yje","pt02":"1-yZL2ExXq46uinj6-THddek432Yv2OnD","pt03":"1Qx_RT187fxxvSogxRG9YDBMLZeyp45Bh","pt04":"1PELy2_5kBLb9AUkAJTMVxRp4CMUllmo5","pt05":"1KJEmnNUxVVGkcBR-vdzTwIT0whgw_5oP","pt06":"1WNma_SRlnC17VLwh0yUDWHpQQBnyZmZm","pt07":"1Su7VKuDmzZijXmd9rcbw0y91_48ZNCu0","pt08":"1LrgI-6JQdfBHYu2F8a0OaUM7jW-oh6_L","pt09":"1aldPAvekPbpTfcJkSV1ydYtClRPI27Wv","pt10":"1Ghb0e461lyrq5lQetSaA3T2uvzxG_qKh","pt11":"1199KfzNiXwL2pHxIWeZa3AS8chkJdZKc","pt12":"1YMrWVpprp5sIpBmY-yIadBUMCNfWSyMw","pt13":"1ZwVej0ChkLlfxyru1f0i9PFDNVy6IcEm","pt14":"1wQxFHwGurMc83oajJQ87giUAlRglVk52","pt15":"1wmkB43d_JhCSO4Ql4DiM3K3uoO4AOP1j","pt16":"1oawGghLqzivqU3AiZfigqF-8LTulPYz_","pt17":"1Z80CdKlpElpShUuPxeajYvfOgUABZIld","pt18":"1pjCeeuxbLIQpRzBRVuycjWbWAuQ9Es9Z","pt19":"1WvsedeuQEQdplMVS0RH6X__Ve_DVWE1T","pt20":"1wM0fRmtmYk7BA9v5FiElpxlwC93kahnA","pt21":"1RatHcTHJnFOvlXEGFnTvrVqa813nT5gl","pt22":"1I25QsY7SxmUN6n1nS2zSEski4I1NsCVX","pt23":"1-OnR3Gf0EP5DeUoJc8Zdl4vpwm8Rj60e","pt24":"185dl7u49VLQIGkm5t30daZA0FV-KTmwG","pt25":"1sKrBSFJzWl_mpNaAL14FQGHH1NgV9fqc","pt26":"1bc3SVyDdGe3ydPKYnHBIzekJ2mI90UU4","cp01":"1FJNxVtzsSPjgq-LwjSCOuhewv7HqHln1","cp02":"10DHSalsE60Hdrhei5LoP_eZ4z-aDIWv6","cp03":"114ZB1zg7oPkk9O3j8ZB9TEt0Kk4_LGmh","cp04":"1itVInBlR1aCvx-h6Vebisl0Bsi2i4k44","cp05":"1t3NOYb1BsKlhghU9-kqcNEPrYFp4tNJi","cp06":"1UvyQehhb8LyguyFVvFHiZk7RugUdFeLF","cp07":"1RiN55Zlu1ivd8KDrEOqzdYDH_orxczTV","cp08":"1s5bTkQ21Y4Hb76VaRRfQFo4WY9txitBi","cp09":"1T-Wjee0rsWs82r6ZCgu_mGYo7ZxeTsqz","cp10":"1jP_gF1O67jlBkhPqbbLpfMM8GeJ2AzCE","cp11":"1H0V-IinJhpRrw2EeTz9o4s6NmeUcIciK","cp12":"1wsu-YCB-DT6n12LSzsaq_GvIwjfB6key","cp13":"1A2p80uqG49hSwvCb1KoYmksFOyctnHiK","cp14":"1OKOm9NWJ66Xmzm4reQJt3_fqF4S2PNfB","cp15":"1MZ-a1P4XeeVQAHCBV6PMCxVXvdZ26Ubu","cp16":"1bFQYKk0ioSrbuYo9b0AWfWhNaOoXw1SB","cp17":"1c2H5WkfZW6k_E1itWzSgav3moaUxdS5j","cp18":"1o-ApkC8R8YkLmB_9tQPYbMEasq13N5An","cp19":"10w4hdhp0S4rl4jGCnvSfdBDeLBmGEzYo","cp20":"1hpCuhEKbCmAyy6JRsujmZsfbC8yOZ7nZ","cp21":"1ZFyueRP95t3FZQNi_629lCVnz1-fMGag","cp22":"1C8heN1Mc8A2161ITTP_0auYG-uB_83bh","cp23":"1OHWSFatLxXtfxo_nEs9CoggQlTgOtdrk","cp24":"1aCvO7i4DDGT3pQzjIGLwooYSKlhcOPdE","cp25":"1M5QZbihXqq0IGTzpkDXRm8GtvYCZaT6n","cp26":"1lIh_GM8YR_KgQ1ARS2FKH9XFIG4RPMEA","cp27":"1xRhm_ky1cinG31RithcJDe19Aki5Jai0","vd01":"1qByPqyCwEsUa8e53jF7ofdIngSVqp5As"};
 const googleDocId=id=>GOOGLE_DRIVE_MAP[id]||null;
 const googleDocURL=id=>{const d=googleDocId(id);return d?'https://drive.google.com/file/d/'+encodeURIComponent(d)+'/view':null};
 let catalog=[],currentView='dashboard',reader={id:null,page:1,day:null,blobUrl:null},currentQuestion=null,flipped=false,flashAt=0,libraryArea='Todos',libraryText='',libraryKind='Todos',cloudClient=null,cloudUser=null,cloudTimer=null,cloudReady=false;
 const letters='ABCDE';
-const primaryDocs=()=>catalog.filter(d=>['Apostila completa','Vade Mecum'].includes(d.kind));
+const primaryDocs=()=>catalog.filter(d=>d.kind==='Apostila completa');
 const subjects=['Português','Inglês','Psicologia'];
 
-// O roteiro agora utiliza a apostila inteira como unidade, nunca partes de páginas.
-// A previsão de dias é uma estimativa de carga, não uma declaração de leitura concluída.
+
+// Apostilas principais: sem o Vade Mecum, disponível somente para consulta.
+// O roteiro distribui páginas por dia com metas quase iguais (até 200).
+// O plano é persistido para que uma confirmação de leitura não reorganize os dias.
 const areasForPlan=['Psicologia','Português','Psicologia','Inglês','Português','Psicologia','Inglês','Português','Psicologia'];
 const docState=id=>state.docProgress?.[id]||{};
-const docFinished=id=>{let o=docState(id);return !!(o.completedAt&&o.quiz&&o.flash)};
+const docFinished=id=>!!docState(id).completedAt;
 function orderedDocs(){
  const docs={};subjects.forEach(a=>docs[a]=primaryDocs().filter(d=>d.area===a));
  const out=[],offsets={Português:0,Inglês:0,Psicologia:0};
  while(out.length<primaryDocs().length){
-  let before=out.length;
+  const size=out.length;
   for(const area of areasForPlan){
    const d=docs[area][offsets[area]];
-   if(d){out.push(d);offsets[area]++;}
+   if(d){out.push(d);offsets[area]++}
   }
-  if(out.length===before)break;
+  if(size===out.length)break;
  }
  return out;
 }
-function calcPlan(){
- const cfg=state.settings;const result=[];
- let clock=cfg.startDate>today()?cfg.startDate:today();
- const dailyPages=Math.max(1,cfg.minutes/60*cfg.pagesPerHour);
+function confirmedPagesFor(d){
+ const seen=new Set((state.read?.[d.id]||[]).map(Number));
+ const complete=!!docState(d.id).completedAt;
+ return complete?d.pages:Array.from(seen).filter(p=>Number.isInteger(p)&&p>=1&&p<=d.pages).length;
+}
+function unreadRuns(){
+ const runs=[];
  for(const doc of orderedDocs()){
   if(docFinished(doc.id))continue;
-  while(!cfg.days.includes(dateOf(clock).getDay()))clock=stepDate(clock,1);
-  const startDate=clock;
-  // Questões e flashcards usam parte da jornada; reservar 40 min. por apostila.
-  const estimatedHours=docState(doc.id).completedAt?0:(doc.pages/cfg.pagesPerHour);
-  const sessions=Math.max(1,Math.ceil((estimatedHours*60+(docState(doc.id).completedAt?0:40))/cfg.minutes));
-  let endDate=startDate;
-  for(let i=1;i<sessions;i++){
-    do{endDate=stepDate(endDate,1)}while(!cfg.days.includes(dateOf(endDate).getDay()));
+  const seen=new Set((state.read?.[doc.id]||[]).map(Number));
+  let from=null;
+  for(let p=1;p<=doc.pages+1;p++){
+   const unread=p<=doc.pages&&!seen.has(p);
+   if(unread&&from===null)from=p;
+   if(!unread&&from!==null){
+    runs.push({id:doc.id,area:doc.area,title:doc.title,start:from,end:p-1,pages:p-from});
+    from=null;
+   }
   }
-  result.push({date:startDate,endDate,estimatedDays:sessions,area:doc.area,id:doc.id,title:doc.title,pages:doc.pages,start:1,end:doc.pages,rest:false});
-  clock=stepDate(endDate,1);
  }
- return result;
+ return runs;
+}
+function calcPlan(){
+ const cfg=state.settings;
+ const start=cfg.startDate>today()?cfg.startDate:today();
+ const daysAvailable=Array.isArray(cfg.days)&&cfg.days.length?cfg.days:[1,2,3,4,5,6];
+ const cap=Math.min(200,Math.max(1,Number(cfg.pagesPerDay)||200));
+ const fingerprint=JSON.stringify({start,days:daysAvailable.slice().sort(),cap,version:4,books:primaryDocs().map(d=>[d.id,d.pages])});
+ if(state.planSnapshot?.fingerprint===fingerprint&&Array.isArray(state.planSnapshot.days))return state.planSnapshot.days;
+ // A primeira migração desconsidera marcações antigas por data, mas preserva todas as páginas lidas.
+ const original=unreadRuns();
+ const total=original.reduce((sum,r)=>sum+r.pages,0);
+ const dayCount=Math.ceil(total/cap);
+ const base=dayCount?Math.floor(total/dayCount):0;
+ const remainder=dayCount?total%dayCount:0;
+ let pointer=0,position=0,date=start;
+ const plan=[];
+ for(let k=0;k<dayCount;k++){
+  while(!daysAvailable.includes(dateOf(date).getDay()))date=stepDate(date,1);
+  let remaining=base+(k<remainder?1:0);
+  const chunks=[];
+  while(remaining>0&&pointer<original.length){
+   const run=original[pointer];
+   const avail=run.pages-position;
+   const count=Math.min(remaining,avail);
+   const from=run.start+position;
+   chunks.push({id:run.id,area:run.area,title:run.title,start:from,end:from+count-1,pages:count});
+   position+=count;remaining-=count;
+   if(position>=run.pages){pointer++;position=0}
+  }
+  const unique=[...new Set(chunks.map(c=>c.area))];
+  plan.push({date,chunks,pages:chunks.reduce((sum,c)=>sum+c.pages,0),area:unique.join(' + '),
+   title:chunks.map(c=>c.title).join(' + '),rest:false});
+  date=stepDate(date,1);
+ }
+ state.planSnapshot={fingerprint,days:plan,createdAt:nowIso()};
+ state.agenda={};
+ localStorage.setItem(key,JSON.stringify(state));
+ return plan;
 }
 function feasibility(){
  const cfg=state.settings,deadline='2026-12-05';
- const remaining=primaryDocs().filter(d=>!docState(d.id).completedAt);
- const pages=remaining.reduce((a,b)=>a+b.pages,0);
- let d=today()>cfg.startDate?today():cfg.startDate,workDays=0;
- while(d<=deadline){if(cfg.days.includes(dateOf(d).getDay()))workDays++;d=stepDate(d,1)}
- const hoursPerStudyDay=workDays?pages/cfg.pagesPerHour/workDays:Infinity;
- return {pages,docs:remaining.length,workDays,requiredPagesPerDay:workDays?pages/workDays:Infinity,requiredHoursPerDay:hoursPerStudyDay,availableHoursPerDay:cfg.minutes/60,deadline,possible:hoursPerStudyDay<=cfg.minutes/60};
+ const docs=primaryDocs();
+ const total=docs.reduce((sum,d)=>sum+d.pages,0);
+ const seen=docs.reduce((sum,d)=>sum+confirmedPagesFor(d),0);
+ const remaining=Math.max(0,total-seen);
+ const cap=Math.min(200,Math.max(1,Number(cfg.pagesPerDay)||200));
+ const start=cfg.startDate>today()?cfg.startDate:today();
+ let dt=start,workDays=0;
+ const available=Array.isArray(cfg.days)&&cfg.days.length?cfg.days:[1,2,3,4,5,6];
+ while(dt<=deadline){if(available.includes(dateOf(dt).getDay()))workDays++;dt=stepDate(dt,1)}
+ const plan=calcPlan(),last=plan.length?plan[plan.length-1].date:null;
+ return {total,seen,remaining,docs:docs.length,workDays,cap,neededDays:plan.length,last,
+  requiredPagesPerDay:workDays?Math.ceil(remaining/workDays):null,
+  possible:!last||last<=deadline,deadline};
 }
 
-function metric(){let readPages=Object.values(state.read).reduce((sum,v)=>sum+(Array.isArray(v)?v.length:0),0),total=primaryDocs().reduce((s,d)=>s+d.pages,0),n=state.answers.length,c=state.answers.filter(a=>a.correct).length,fl=Object.keys(state.flash).length;return{readPages,total,answered:n,accuracy:n?Math.round(c/n*100):null,flash:fl}};
+function metric(){
+ const docs=primaryDocs(),total=docs.reduce((sum,d)=>sum+d.pages,0);
+ const readPages=docs.reduce((sum,d)=>sum+confirmedPagesFor(d),0);
+ const n=state.answers.length,c=state.answers.filter(a=>a.correct).length,fl=Object.keys(state.flash).length;
+ return {readPages,total,answered:n,accuracy:n?Math.round(c/n*100):null,flash:fl};
+}
 function persist(){state.updatedAt=nowIso();localStorage.setItem(key,JSON.stringify(state));if(cloudUser&&cloudClient){clearTimeout(cloudTimer);cloudTimer=setTimeout(syncUp,1500)}}
 function toast(s){let el=$('#toast');el.textContent=s;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),3300)}
 function progress(n,d){let p=d?Math.max(0,Math.min(100,Math.round(n/d*100))):0;return `<div class="progressbar"><div style="width:${p}%"></div></div>`}
 function header(title,subtitle,action=''){return `<div class="page-head"><div><div class="eyebrow">PSICOPITA · ESTUDA IA</div><h1>${title}</h1><p>${subtitle}</p></div>${action}</div>`}
 function show(view){currentView=view;document.querySelectorAll('.nav-btn[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view));$('#breadcrumb').innerHTML='Início <b>/</b> '+({dashboard:'Visão geral',agenda:'Agenda de estudos',library:'Minha biblioteca',questions:'Questões e simulados',review:'Revisão e flashcards',tutor:'Tutor IA',settings:'Configurações'}[view]||view);document.querySelector('.sidebar').classList.remove('open');const render={dashboard:renderDashboard,agenda:renderAgenda,library:renderLibrary,questions:renderQuestions,review:renderReview,tutor:renderTutor,settings:renderSettings};(render[view]||renderDashboard)();window.scrollTo({top:0,behavior:'instant'});}
 
-function dashboardToday(){const plan=calcPlan();return plan[0]||null}
-const done=o=>!!o;
-function dayProgress(day){
- if(!day||day.rest)return {read:0,quiz:false,flash:false};
- const p=docState(day.id);
- return {read:p.completedAt?day.pages:0,quiz:!!p.quiz,flash:!!p.flash};
-}
-function dayDone(date){let d=calcPlan().find(x=>x.date===date);return d?docFinished(d.id):false}
-function nextStage(day){let p=dayProgress(day);return p.read<day.pages?'read':!p.quiz?'quiz':!p.flash?'flash':'finished'}
 
-function renderDashboard(){let m=metric(),day=dashboardToday(),status=day?nextStage(day):'finished',p=day?dayProgress(day):null;
- $('#main').innerHTML=`<div class="hero"><div><div class="eyebrow">SEU ESPAÇO DE PREPARAÇÃO</div><h1>Um plano de cada vez.<br>Uma conquista por dia.</h1><p>Treinamento direcionado à Transpetro — Ênfase 31: Psicologia. Leitura guiada, questões autorais, revisões e resultados em um só lugar.</p><button class="btn gold" data-action="agenda">${day?'Continuar meu estudo →':'Ver minha agenda →'}</button></div><div class="hint-icon" style="font-size:95px;color:#d6b57b">Ψ</div></div>
- <div class="notice blue" style="margin-bottom:20px">🔐 <strong>${cloudUser?`Progresso sincronizado com a conta ${htmlSafe(cloudUser.email||"autenticada")}.`:"Projeto Supabase conectado. Entre por e-mail em Configurações para ativar a sincronização privada do progresso."}</strong> <button class="btn" data-action="settings" style="margin-left:10px">Minha conta →</button></div>
- <div class="grid four" style="margin-bottom:24px"><div class="card"><div class="metric-icon">▤</div><div class="metric-label">Páginas confirmadas</div><div class="metric-number">${m.readPages}</div><div class="metric-note">de ${m.total.toLocaleString('pt-BR')} páginas planejáveis</div></div><div class="card"><div class="metric-icon">☷</div><div class="metric-label">Questões respondidas</div><div class="metric-number">${m.answered}</div><div class="metric-note">${m.accuracy??'—'}% de acertos</div></div><div class="card"><div class="metric-icon">◇</div><div class="metric-label">Flashcards revisados</div><div class="metric-number">${m.flash}</div><div class="metric-note">memorização ativa</div></div><div class="card"><div class="metric-icon">▤</div><div class="metric-label">Materiais cadastrados</div><div class="metric-number">${catalog.length}</div><div class="metric-note">${Object.keys(GOOGLE_DRIVE_MAP).length} vinculados ao Google Drive</div></div></div>
- <div class="grid maincol"><div class="card"><div class="sectionline"><h2>O que estudar hoje?</h2><span class="badge goldish">${day?htmlSafe(formatDay(day.date)):'A definir'}</span></div>${day?`<p><strong>${htmlSafe(day.area)}</strong> · ${htmlSafe(day.title)}</p><p class="muted small">Páginas ${day.start} a ${day.end} · ${day.pages} páginas de meta</p>${progress(p.read,day.pages)}<div class="stage-summary"><span>${p.read}/${day.pages} páginas</span><span>${p.quiz?'✓':'○'} 10 questões</span><span>${p.flash?'✓':'○'} 5 flashcards</span></div><div class="notice blue">Próxima etapa: <strong>${status==='read'?'Leitura das páginas do dia':status==='quiz'?'Questões do assunto':status==='flash'?'Revisão com flashcards':'Concluído'}</strong>. Páginas só entram no progresso ao serem confirmadas por você.</div><button class="btn primary" data-action="resume">${status==='finished'?'Ver agenda':'Retomar atividade →'}</button>`:`<div class="empty">Configure seus dias e horas na área de configurações.</div>`}</div>
- <div class="card"><h3>Meu desempenho</h3>${subjects.map(a=>{let docs=primaryDocs().filter(d=>d.area===a),total=docs.reduce((s,d)=>s+d.pages,0),n=docs.reduce((s,d)=>s+(state.read[d.id]||[]).length,0);return `<div class="subject"><div class="subhead"><span>${a}</span><span class="subject-pill">${n}/${total} págs.</span></div>${progress(n,total)}</div>`}).join('')}<div class="divider"></div><p class="small muted">As apostilas estão vinculadas ao seu Google Drive. Para sincronizar leituras, questões e revisões entre dispositivos, entre na sua conta na seção Configurações.</p><button class="btn" data-action="library">Abrir biblioteca →</button></div></div>`;
+function dashboardToday(){
+ const plan=calcPlan();
+ return plan.find(day=>!dayDone(day.date))||null;
 }
-function renderAgenda(){let all=calcPlan(),start=today(),weeks=all.filter(x=>x.date>=stepDate(start,-7)).slice(0,35),pending=all.filter(x=>!x.rest&&x.date<start&&!dayDone(x.date)),focus=pending[0]||all.find(x=>x.date>=start&&!x.rest),days=weeks.slice(0,21);
- $('#main').innerHTML=header('Minha agenda de estudos','Cronograma automático de leitura, questões e revisões com base nas suas horas e dias disponíveis.',`<button class="btn" data-action="settings">Ajustar disponibilidade ⚙</button>`)+`<div class="notice blue">A distribuição prioriza Psicologia pela maior quantidade de questões específicas. Se houver etapas pendentes, o sistema oferece a atividade mais antiga antes de avançar no roteiro.</div>${pending.length?`<div class="notice">Você tem <strong>${pending.length} dia(s) pendente(s)</strong>. A retomada começará pelo mais antigo, sem registrar tarefas não realizadas como concluídas.</div>`:''}<div class="grid maincol"><div class="card"><div class="sectionline"><h2>Roteiro em foco</h2><span class="badge">${focus?.date||''}</span></div>${focus?renderDayDetail(focus):'<div class="empty">Não foram geradas atividades.</div>'}</div><div class="card"><h3>Próximos dias</h3>${days.map(d=>`<div class="agenda-item ${d.rest?'':'current'} ${dayDone(d.date)?'complete':''}"><div class="step-number">${dateOf(d.date).getDate()}</div><div><h4>${d.rest?'Descanso':htmlSafe(d.area)}</h4><p>${d.rest?'Dia sem estudo programado':`${htmlSafe(d.title).slice(0,54)} · págs. ${d.start}–${d.end}`}</p></div>${dayDone(d.date)?'<span class="done">✓</span>':d.rest?'':`<button class="btn" data-date="${d.date}" data-action="day">Abrir</button>`}</div>`).join('')}</div></div>`;
+function dayProgress(day){
+ if(!day)return {read:0,quiz:false,flash:false};
+ let read=0;
+ for(const c of day.chunks){
+  const seen=new Set((state.read[c.id]||[]).map(Number));
+  if(docState(c.id).completedAt){read+=c.pages;continue}
+  for(let p=c.start;p<=c.end;p++)if(seen.has(p))read++;
+ }
+ const status=state.agenda[day.date]||{};
+ return {read,quiz:!!status.quiz,flash:!!status.flash};
 }
-function renderDayDetail(d){let p=dayProgress(d),stage=nextStage(d);return `<div class="eyebrow">${htmlSafe(formatDay(d.date))}</div><h3>${htmlSafe(d.title)}</h3><p class="small muted">${htmlSafe(d.area)} · páginas ${d.start} a ${d.end}</p>${progress(p.read,d.pages)}<div class="stage-summary"><span>${p.read}/${d.pages} páginas</span><span>${p.quiz?'✓':'○'} 10 questões</span><span>${p.flash?'✓':'○'} 5 flashcards</span></div>${[['read','1. Leitura orientada',`${d.pages} páginas do PDF, uma a uma`],['quiz','2. Questões comentadas','10 questões autorais por disciplina'],['flash','3. Revisão ativa','5 cartões para recordar conceitos']].map(([s,n,h],i)=>`<div class="agenda-item ${stage===s?'current':''} ${['read','quiz','flash'].indexOf(stage)>i?'complete':''}"><span class="step-number">${i+1}</span><div><h4>${n}</h4><p>${h}</p></div>${(s==='read'?p.read===d.pages:s==='quiz'?p.quiz:p.flash)?'<span class="done">✓</span>':''}</div>`).join('')}<div style="margin-top:20px"><button class="btn primary" data-action="day" data-date="${d.date}">${stage==='read'?'Começar leitura →':stage==='quiz'?'Resolver questões →':stage==='flash'?'Revisar flashcards →':'Dia concluído ✓'}</button></div>`}
+function dayDone(date){
+ const day=calcPlan().find(d=>d.date===date);
+ if(!day)return false;
+ const p=dayProgress(day);
+ return p.read===day.pages&&p.quiz&&p.flash;
+}
+function nextStage(day){
+ const p=dayProgress(day);
+ return p.read<day.pages?'read':!p.quiz?'quiz':!p.flash?'flash':'finished';
+}
+function remainingChunk(day){
+ return day?.chunks?.find(c=>{
+  if(docState(c.id).completedAt)return false;
+  const seen=new Set((state.read[c.id]||[]).map(Number));
+  for(let p=c.start;p<=c.end;p++)if(!seen.has(p))return true;
+  return false;
+ })||null;
+}
+function chunkReadCount(c){
+ if(docState(c.id).completedAt)return c.pages;
+ const seen=new Set((state.read[c.id]||[]).map(Number));
+ let n=0;for(let p=c.start;p<=c.end;p++)if(seen.has(p))n++;
+ return n;
+}
+function renderDashboard(){
+ const m=metric(),day=dashboardToday(),status=day?nextStage(day):'finished',p=day?dayProgress(day):null;
+ const f=feasibility();
+ $('#main').innerHTML=`<div class="hero"><div><div class="eyebrow">SEU ESPAÇO DE PREPARAÇÃO</div>
+ <h1>Um plano de cada vez.<br>Uma conquista por dia.</h1>
+ <p>Preparação Transpetro · Psicologia. Apostilas em sequência, questões pertinentes e revisões.</p>
+ <button class="btn gold" data-action="agenda">${day?'Continuar meu estudo →':'Ver a agenda →'}</button></div>
+ <div class="hint-icon" style="font-size:95px;color:#d6b57b">Ψ</div></div>
+ <div class="notice blue"><strong>${cloudUser?'✓ Conta sincronizada: '+htmlSafe(cloudUser.email||'conectada'):'Para sincronizar seu progresso, entre na conta em Configurações.'}</strong>
+ <button class="btn" data-action="settings">Minha conta →</button></div>
+ <div class="grid four" style="margin:20px 0 24px">
+ <div class="card"><div class="metric-label">Páginas confirmadas</div><div class="metric-number">${m.readPages}</div><div class="metric-note">de ${m.total} páginas; Vade Mecum excluído</div></div>
+ <div class="card"><div class="metric-label">Questões respondidas</div><div class="metric-number">${m.answered}</div><div class="metric-note">${m.accuracy??'—'}% de acertos</div></div>
+ <div class="card"><div class="metric-label">Flashcards revisados</div><div class="metric-number">${m.flash}</div></div>
+ <div class="card"><div class="metric-label">Apostilas principais</div><div class="metric-number">${f.docs}</div><div class="metric-note">Vade disponível apenas para consulta</div></div>
+ </div>
+ <div class="notice ${f.possible?'green':''}" style="margin-bottom:20px">
+ <strong>Meta: concluir a leitura até 5 de dezembro.</strong>
+ ${f.neededDays? `Faltam ${f.remaining} páginas, divididas em ${f.neededDays} dias de leitura, com limite de ${f.cap} páginas por dia.
+ A última etapa está prevista para <strong>${formatDay(f.last)}</strong>.`:'Todas as páginas previstas já foram confirmadas.'}
+ ${!f.possible?'A previsão excede o prazo configurado; ajuste a disponibilidade ou o limite diário.':''}
+ </div>
+ <div class="grid maincol"><div class="card"><div class="sectionline">
+ <h2>O que estudar agora?</h2><span class="badge goldish">${day?htmlSafe(formatDay(day.date)):'Leitura concluída'}</span></div>
+ ${day?`<p><strong>${day.pages} páginas previstas</strong> em ${day.chunks.length} trecho(s) de apostilas.</p>
+ ${progress(p.read,day.pages)}<p class="small muted">${p.read}/${day.pages} páginas confirmadas</p>
+ <div class="stage-summary"><span>${p.quiz?'✓':'○'} Questões relacionadas</span><span>${p.flash?'✓':'○'} Revisão</span></div>
+ <div class="notice blue">Próxima etapa: <strong>${status==='read'?'Leitura das apostilas':status==='quiz'?'Questões do conteúdo estudado':status==='flash'?'Flashcards do assunto':'Concluído'}</strong></div>
+ <button class="btn primary" data-action="resume">Retomar atividade →</button>`:
+ '<div class="empty">Nenhuma leitura pendente no plano atual. Continue com revisões e simulados.</div>'}
+ </div><div class="card"><h3>Progresso por disciplina</h3>
+ ${subjects.map(a=>{let docs=primaryDocs().filter(d=>d.area===a),total=docs.reduce((sum,d)=>sum+d.pages,0),
+ done=docs.reduce((sum,d)=>sum+confirmedPagesFor(d),0);
+ return `<div class="subject"><div class="subhead"><span>${a}</span><span class="subject-pill">${done}/${total} págs.</span></div>${progress(done,total)}</div>`}).join('')}
+ <div class="divider"></div><p class="small muted">O Vade Mecum e as versões sintéticas não entram na meta. Permanecem na biblioteca.</p>
+ <button class="btn" data-action="library">Abrir biblioteca →</button></div></div>`;
+}
+function renderAgenda(){
+ const days=calcPlan(),f=feasibility();
+ const focus=dashboardToday();
+ $('#main').innerHTML=header('Agenda de estudos','Páginas equilibradas por dia, até 200, com apostilas completas e sem o Vade Mecum.',
+ `<button class="btn" data-action="settings">Ajustar meus dias ⚙</button>`)+
+ `<div class="notice ${f.possible?'green':''}"><strong>${f.remaining} páginas restantes.</strong>
+ ${f.neededDays? `Distribuição em ${f.neededDays} dias de estudo. Previsão de término: <strong>${formatDay(f.last)}</strong>.
+ ${f.possible?'Dentro do prazo de 5 de dezembro.':'Após o prazo de 5 de dezembro.'}`:'Leitura principal concluída.'}
+ As páginas já confirmadas são preservadas. O Vade Mecum não entra na métrica.</div>
+ <div class="grid maincol"><div class="card"><h2>Roteiro em foco</h2>
+ ${focus?renderDayDetail(focus):'<p>Sem etapas de leitura pendentes.</p>'}
+ </div><div class="card"><h3>Todos os dias de leitura</h3>
+ ${days.map(d=>{const p=dayProgress(d);
+ return `<div class="agenda-item ${p.read===d.pages&&p.quiz&&p.flash?'complete':''}">
+ <div class="step-number">${dateOf(d.date).getDate()}</div><div>
+ <h4>${htmlSafe(formatDay(d.date))}</h4>
+ <p><strong>${d.pages} páginas</strong> · ${p.read} confirmadas</p>
+ <p>${d.chunks.map(c=>htmlSafe(c.area)).filter((x,i,a)=>a.indexOf(x)===i).join(' + ')}</p></div>
+ <button class="btn" data-action="day" data-date="${d.date}">${p.read===d.pages&&p.quiz&&p.flash?'✓ Concluído':'Abrir'}</button></div>`}).join('')}
+ </div></div>`;
+}
+function renderDayDetail(d){
+ const p=dayProgress(d),stage=nextStage(d),questions=relatedQuestions(d);
+ return `<div class="eyebrow">${htmlSafe(formatDay(d.date))}</div>
+ <h3>Meta de ${d.pages} páginas</h3>${progress(p.read,d.pages)}
+ <p class="small muted">${p.read}/${d.pages} páginas confirmadas. Leia os trechos na ordem e registre somente após a leitura.</p>
+ ${d.chunks.map((c,i)=>`<div class="agenda-item ${chunkReadCount(c)===c.pages?'complete':''}">
+ <span class="step-number">${i+1}</span><div>
+ <h4>${htmlSafe(c.title)}</h4><p>${htmlSafe(c.area)} · páginas ${c.start} a ${c.end}
+ (${c.pages} páginas; ${chunkReadCount(c)} confirmadas)</p></div>
+ <button class="btn" data-action="readchunk" data-date="${d.date}" data-id="${c.id}">Ler →</button></div>`).join('')}
+ <div class="stage-summary"><span>${p.quiz?'✓':'○'} ${questions.length} questões compatíveis no banco</span>
+ <span>${p.flash?'✓':'○'} Revisão do tema</span></div>
+ ${questions.length===0?'<p class="small muted">Ainda não há questões autorais deste assunto no banco; não serão exibidas perguntas de conteúdos diferentes.</p>':''}
+ <button class="btn primary" data-action="day" data-date="${d.date}">
+ ${stage==='read'?'Continuar leitura →':stage==='quiz'?'Fazer questões do tema →':stage==='flash'?'Revisar o tema →':'Etapa concluída ✓'}</button>`;
+}
+
 function renderLibrary(){let filter=catalog.filter(d=>(libraryArea==='Todos'||d.area===libraryArea)&&(libraryKind==='Todos'||d.kind===libraryKind)&&(`${d.title} ${d.group}`.toLocaleLowerCase('pt-BR')).includes(libraryText.toLocaleLowerCase('pt-BR')));
  $('#main').innerHTML=header('Biblioteca de estudos no Google Drive','Suas apostilas já estão vinculadas: não é necessário enviar os arquivos novamente.')+`<div class="notice blue"><strong>54 PDFs vinculados ao Google Drive.</strong> Eles continuam privados. Para lê-los, entre na conta Google que tem acesso à pasta. <a href="https://drive.google.com/drive/folders/1bEntKpPKJWVesGKYG4yRY0kRuYAR3nou" target="_blank" rel="noopener noreferrer" style="text-decoration:underline">Acessar minha pasta Google Drive ↗</a></div><div class="toolbar"><a class="btn primary" href="https://drive.google.com/drive/folders/1bEntKpPKJWVesGKYG4yRY0kRuYAR3nou" target="_blank" rel="noopener noreferrer">Entrar no Google Drive ↗</a><input id="librarySearch" placeholder="Pesquisar por assunto, autor ou título" value="${htmlSafe(libraryText)}"><select id="libraryArea">${['Todos','Português','Inglês','Psicologia'].map(a=>`<option ${a===libraryArea?'selected':''}>${a}</option>`).join('')}</select><select id="libraryKind">${['Todos','Apostila completa','PDF sintético','Lista de exercícios','Vade Mecum'].map(a=>`<option ${a===libraryKind?'selected':''}>${a}</option>`).join('')}</select></div><p class="muted small">${filter.length} materiais encontrados. ${Object.keys(GOOGLE_DRIVE_MAP).length} disponíveis no Drive; ${Object.keys(state.files).length} armazenados também no navegador. O acesso requer autorização da sua conta Google.</p><div id="bulkImportStatus"></div>${renderBulkPending()}<div>${filter.map(d=>`<div class="doc"><div class="doc-info"><p class="doc-title">${htmlSafe(d.title)}</p><span class="doc-tag">${htmlSafe(d.area)}</span><span class="doc-tag">${htmlSafe(d.kind)}</span><small>${d.pages} páginas · ${htmlSafe(d.group)}</small>${googleDocId(d.id)?'<div class="small" style="color:#298667;margin-top:7px">✓ Arquivo vinculado ao seu Google Drive</div>':state.files[d.id]?'<div class="small" style="color:#298667;margin-top:7px">✓ PDF salvo neste navegador</div>':''}</div><div class="doc-actions">${googleDocId(d.id)?'<a class="btn" target="_blank" rel="noopener noreferrer" href="'+googleDocURL(d.id)+'">Abrir no Drive ↗</a>':`<button class="btn" data-action="attach" data-id="${d.id}">${state.files[d.id]?'Trocar PDF':'Adicionar PDF'}</button>`}<button class="btn primary" data-action="reader" data-id="${d.id}">Ler →</button></div></div>`).join('')}</div>`;
  $('#librarySearch').addEventListener('input',e=>{libraryText=e.target.value;renderLibrary();$('#librarySearch').focus();$('#librarySearch').setSelectionRange(libraryText.length,libraryText.length)});$('#libraryArea').addEventListener('change',e=>{libraryArea=e.target.value;renderLibrary()});$('#libraryKind').addEventListener('change',e=>{libraryKind=e.target.value;renderLibrary()});
