@@ -166,6 +166,9 @@ const QUESTION_BANK = [
 <script src="exam-psy-1.js"></script>
 <script src="exam-psy-2.js"></script>
 <script src="exam-psy-3.js"></script>
+<script src="study-questions-pt.js"></script>
+<script src="study-questions-en.js"></script>
+<script src="study-questions-psy.js"></script>
 <script>
 /* PsicoPita Estuda IA — aplicação estática. Nenhum PDF protegido é servido publicamente. */
 'use strict';
@@ -673,10 +676,18 @@ function relatedQuestions(day){
   if(!topics[c.area])topics[c.area]=new Set();
   for(const topic of DOC_TOPICS[c.id]||[])topics[c.area].add(topic);
  }
- return pool().filter(q=>topics[q.subject]?.has(q.topic));
+ return pool().filter(q=>{
+  if(q.docId)return day.chunks.some(c=>c.id===q.docId&&(!q.pages||(c.start<=q.pages[1]&&c.end>=q.pages[0])));
+  return topics[q.subject]?.has(q.topic);
+ });
 }
 
-function pool(area){return QUESTION_BANK.map((q,i)=>({...{subject:q[0],question:q[1],options:q[2],answer:q[3],explain:q[4],topic:q[5]},id:i})).filter(q=>!area||q.subject===area)}
+function pool(area){
+ const base=QUESTION_BANK.map((q,i)=>({subject:q[0],question:q[1],options:q[2],
+  answer:q[3],explain:q[4],topic:q[5],id:i}));
+ const source=(window.PSICOPITA_STUDY_SOURCE||[]).map((q,i)=>({...q,id:'source-'+i}));
+ return base.concat(source).filter(q=>!area||q.subject===area);
+}
 function shuffled(a){let b=a.slice();for(let i=b.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b}
 function startMock(index){
  index=Number(index);
@@ -815,7 +826,9 @@ function startQuestions(area,count=10,day=null,sim=false){
  if(sim)ids=[...shuffled(pool('Português')).slice(0,10),...shuffled(pool('Inglês')).slice(0,10),...shuffled(pool('Psicologia')).slice(0,50)].map(q=>q.id);
  else if(day){
   const planned=calcPlan().find(d=>d.date===day);
-  ids=shuffled(relatedQuestions(planned)).slice(0,count).map(q=>q.id);
+  const available=relatedQuestions(planned),alreadyAnswered=new Set(state.answers.map(r=>r.id));
+  ids=[...shuffled(available.filter(q=>!alreadyAnswered.has(q.id))),
+       ...shuffled(available.filter(q=>alreadyAnswered.has(q.id)))].slice(0,count).map(q=>q.id);
   if(!ids.length){
    state.agenda[day]={...(state.agenda[day]||{}),quiz:true,quizNotAvailable:true};
    persist();
@@ -830,11 +843,11 @@ function renderQuestions(){currentView='questions';let s=state.session;
  if(s?.simIndex!==undefined)return renderMock();
  if(!s){$('#main').innerHTML=header('Questões e simulados','Questões autorais baseadas nos assuntos do edital, com gabarito comentado e identificação da disciplina.')+`<div class="notice blue">Questões elaboradas para estudo. Não são reproduções de provas nem possuem garantia de prever questões da Cesgranrio.</div><div class="grid third">${subjects.map(a=>`<div class="card"><h3>${a}</h3><p class="small muted">${pool(a).length} questões originais disponíveis</p><button class="btn primary" data-action="startquiz" data-area="${a}">Treinar 10 questões →</button></div>`).join('')}</div><div class="card" style="margin-top:18px"><h3>Três simulados comparáveis</h3><p class="small muted">Os três cadernos completos são disponibilizados nas datas específicas do calendário. Nos dias reservados, a única atividade é o simulado. As questões de treino ficam separadas para não antecipar a prova.</p><button class="btn gold" data-action="agenda">Ver datas dos simulados →</button></div>`;return}
  let total=s.ids.length,position=s.at;if(position>=total){let correct=s.results.filter(x=>x.correct).length;$('#main').innerHTML=header('Atividade concluída','Seu resultado foi registrado no histórico de estudos.')+`<div class="card" style="max-width:740px"><div class="eyebrow">SEU RESULTADO</div><div class="metric-number">${correct}/${total}</div><h3>${Math.round(100*correct/total)}% de acertos</h3><p>Você respondeu a ${total} questões ${s.sim?'no simulado':'na atividade de treino'}.</p>${progress(correct,total)}<button class="btn primary" data-action="finishquiz">${s.day?'Seguir para revisão →':'Finalizar →'}</button></div>`;return}
- let id=s.ids[position],q=pool().find(x=>x.id===id),result=s.results.find(x=>x.position===position);$('#main').innerHTML=header(s.sim?'Simulado Cesgranrio — modelo':'Questões comentadas',s.day?`Etapa 2 do roteiro · ${formatDay(s.day)}`:'Treino de fixação com respostas fundamentadas.')+`<div class="card" style="max-width:880px"><div class="split"><span class="badge">${htmlSafe(q.subject)} · ${htmlSafe(q.topic)}</span><span class="status">Questão ${position+1} de ${total}</span></div>${progress(position,total)}<div class="question"><h3>${htmlSafe(q.question)}</h3>${q.options.map((opt,i)=>`<button class="option ${result?(i===q.answer?'correct':i===result.choice?'wrong':''):''}" data-action="answer" data-choice="${i}" ${result?'disabled':''}><span class="choice-badge">${letters[i]}</span><span>${htmlSafe(opt)}</span></button>`).join('')}${result?`<div class="explanation"><strong>${result.correct?'Resposta correta!':'Resposta incorreta.'} Gabarito: ${letters[q.answer]}.</strong><p>${htmlSafe(q.explain)}</p></div><button class="btn primary" data-action="nextquestion">${position===total-1?'Ver meu resultado →':'Próxima questão →'}</button>`:''}</div></div><button class="btn" style="margin-top:18px" data-action="stopquiz">Sair e conservar progresso</button>`;
+ let id=s.ids[position],q=pool().find(x=>x.id===id),result=s.results.find(x=>x.position===position);$('#main').innerHTML=header(s.sim?'Simulado Cesgranrio — modelo':'Questões comentadas',s.day?`Etapa 2 do roteiro · ${formatDay(s.day)}`:'Treino de fixação com respostas fundamentadas.')+`<div class="card" style="max-width:880px"><div class="split"><span class="badge">${htmlSafe(q.subject)} · ${htmlSafe(q.topic)}</span><span class="status">Questão ${position+1} de ${total}</span></div>${progress(position,total)}<div class="question"><h3>${htmlSafe(q.question)}</h3>${q.docId?`<p class="small muted">Questão original baseada no tópico da apostila: ${htmlSafe(catalog.find(d=>d.id===q.docId)?.title||q.docId)}${q.pages?` · referência de estudo: págs. ${q.pages[0]}–${q.pages[1]}`:""}</p>`:""}${q.options.map((opt,i)=>`<button class="option ${result?(i===q.answer?'correct':i===result.choice?'wrong':''):''}" data-action="answer" data-choice="${i}" ${result?'disabled':''}><span class="choice-badge">${letters[i]}</span><span>${htmlSafe(opt)}</span></button>`).join('')}${result?`<div class="explanation"><strong>${result.correct?'Resposta correta!':'Resposta incorreta.'} Gabarito: ${letters[q.answer]}.</strong><p>${htmlSafe(q.explain)}</p></div><button class="btn primary" data-action="nextquestion">${position===total-1?'Ver meu resultado →':'Próxima questão →'}</button>`:''}</div></div><button class="btn" style="margin-top:18px" data-action="stopquiz">Sair e conservar progresso</button>`;
 }
 function answer(choice){let s=state.session;if(s?.simIndex!==undefined)return answerMock(choice);if(!s||s.at>=s.ids.length||s.results.some(x=>x.position===s.at))return;let id=s.ids[s.at],q=pool().find(x=>x.id===id),right=Number(choice)===q.answer;let res={id,choice:Number(choice),correct:right,position:s.at,date:nowIso(),subject:q.subject,topic:q.topic};s.results.push(res);state.answers.push(res);persist();renderQuestions()}
 function finishQuiz(){let s=state.session;if(s?.simIndex!==undefined)return finishMock();if(!s)return;if(s.sim)state.simulations.push({date:nowIso(),results:s.results.length,correct:s.results.filter(x=>x.correct).length});let day=s.day,area=s.area;if(day&&s.results.length===s.ids.length){state.agenda[day]=state.agenda[day]||{};state.agenda[day].quiz=true}state.session=null;persist();if(day)startFlash(null,day);else show('dashboard')}
-const cards=QUESTION_BANK.map((q,i)=>({id:'f'+i,questionIndex:i,area:q[0],topic:q[5],front:q[1],back:q[4]}));
+const cards=pool().map((q,i)=>({id:'f'+i,questionIndex:q.id,area:q.subject,topic:q.topic,front:q.question,back:q.explain}));
 let flashSession=null;
 function startFlash(area=null,day=null){
  let selected=cards.filter(c=>!area||c.area===area);
