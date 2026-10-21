@@ -375,81 +375,114 @@ function chunkReadCount(c){
  let n=0;for(let p=c.start;p<=c.end;p++)if(seen.has(p))n++;
  return n;
 }
+function mockProgressPanel(){
+ const dates=benchmarkDates(),scores=state.mockResults||{};
+ return `<div class="card" style="margin-bottom:18px"><div class="sectionline"><h2>Evolução nos três simulados</h2>
+ <span class="badge">70 questões · mesmo perfil de dificuldade</span></div>
+ <p class="small muted">10 Português + 10 Inglês + 50 Psicologia. Questões diferentes, competências e proporções equivalentes. Correção somente ao final.</p>
+ <div class="grid third">${dates.map(x=>{
+ const result=scores[x.index],correct=result?.correct||0,previous=x.index?scores[x.index-1]:null;
+ const delta=result&&previous?correct-previous.correct:null;
+ return `<div style="border:1px solid #dce9eb;padding:16px;border-radius:12px">
+ <div class="eyebrow">SIMULADO ${x.index+1}</div><h3>${htmlSafe(x.title)}</h3>
+ <p class="muted small">${htmlSafe(formatDay(x.date))} · exclusivamente prova</p>
+ <div class="metric-number">${result?correct+' / 70':'— / 70'}</div>
+ ${progress(correct,70)}
+ <p class="small muted">${result?'Português: '+result.bySubject.Português+'/10 · Inglês: '+result.bySubject.Inglês+'/10 · Psicologia: '+result.bySubject.Psicologia+'/50':'Aguardando realização'}</p>
+ ${delta===null?'':`<strong style="color:${delta>=0?'#397e67':'#b15d52'}">${delta>=0?'+':''}${delta} pontos em relação ao anterior</strong>`}
+ <button class="btn" data-action="${result?'mockresult':'mockexam'}" data-index="${x.index}" style="width:100%;margin-top:9px">
+ ${result?'Ver resultado': 'Abrir simulado →'}</button></div>`}).join('')}</div></div>`;
+}
+
 function renderDashboard(){
- const m=metric(),day=dashboardToday(),status=day?nextStage(day):'finished',p=day?dayProgress(day):null;
- const f=feasibility();
- $('#main').innerHTML=`<div class="hero"><div><div class="eyebrow">SEU ESPAÇO DE PREPARAÇÃO</div>
- <h1>Um plano de cada vez.<br>Uma conquista por dia.</h1>
- <p>Preparação Transpetro · Psicologia. Apostilas em sequência, questões pertinentes e revisões.</p>
- <button class="btn gold" data-action="agenda">${day?'Continuar meu estudo →':'Ver a agenda →'}</button></div>
+ const m=metric(),day=dashboardToday(),f=feasibility();
+ const p=day?.kind==='reading'?dayProgress(day):null,status=day?nextStage(day):'finished';
+ $('#main').innerHTML=`<div class="hero"><div><div class="eyebrow">PSICOPITA · ESTUDA IA</div>
+ <h1>Prepare-se e acompanhe a evolução.</h1>
+ <p>Leitura das apostilas, questões dos capítulos estudados e três simulados comparáveis antes da prova.</p>
+ <button class="btn gold" data-action="agenda">Ver meu cronograma →</button></div>
  <div class="hint-icon" style="font-size:95px;color:#d6b57b">Ψ</div></div>
- <div class="notice blue"><strong>${cloudUser?'✓ Conta sincronizada: '+htmlSafe(cloudUser.email||'conectada'):'Para sincronizar seu progresso, entre na conta em Configurações.'}</strong>
- <button class="btn" data-action="settings">Minha conta →</button></div>
- <div class="grid four" style="margin:20px 0 24px">
- <div class="card"><div class="metric-label">Páginas confirmadas</div><div class="metric-number">${m.readPages}</div><div class="metric-note">de ${m.total} páginas; Vade Mecum excluído</div></div>
- <div class="card"><div class="metric-label">Questões respondidas</div><div class="metric-number">${m.answered}</div><div class="metric-note">${m.accuracy??'—'}% de acertos</div></div>
+ <div class="notice blue"><strong>${cloudUser?'✓ Sincronizado com '+htmlSafe(cloudUser.email||'conta autenticada'):
+ 'Entre em Configurações para ativar a sincronização privada do progresso.'}</strong>
+ <button class="btn" data-action="settings">Configurações →</button></div>
+ <div class="grid four" style="margin:20px 0">
+ <div class="card"><div class="metric-label">Páginas confirmadas</div><div class="metric-number">${m.readPages}</div>
+ <div class="metric-note">de ${m.total}, sem o Vade Mecum</div></div>
+ <div class="card"><div class="metric-label">Questões de treino respondidas</div><div class="metric-number">${m.answered}</div>
+ <div class="metric-note">${m.accuracy??'—'}% de acertos</div></div>
  <div class="card"><div class="metric-label">Flashcards revisados</div><div class="metric-number">${m.flash}</div></div>
- <div class="card"><div class="metric-label">Apostilas principais</div><div class="metric-number">${f.docs}</div><div class="metric-note">Vade disponível apenas para consulta</div></div>
- </div>
- <div class="notice ${f.possible?'green':''}" style="margin-bottom:20px">
- <strong>Meta: concluir a leitura até 5 de dezembro.</strong>
- ${f.neededDays? `Faltam ${f.remaining} páginas, divididas em ${f.neededDays} dias de leitura, com limite de ${f.cap} páginas por dia.
- A última etapa está prevista para <strong>${formatDay(f.last)}</strong>.`:'Todas as páginas previstas já foram confirmadas.'}
- ${!f.possible?'A previsão excede o prazo configurado; ajuste a disponibilidade ou o limite diário.':''}
- </div>
- <div class="grid maincol"><div class="card"><div class="sectionline">
- <h2>O que estudar agora?</h2><span class="badge goldish">${day?htmlSafe(formatDay(day.date)):'Leitura concluída'}</span></div>
- ${day?`<p><strong>${day.pages} páginas previstas</strong> em ${day.chunks.length} trecho(s) de apostilas.</p>
+ <div class="card"><div class="metric-label">Apostilas obrigatórias</div><div class="metric-number">${f.docs}</div>
+ <div class="metric-note">Vade Mecum apenas para consulta</div></div></div>
+ ${mockProgressPanel()}
+ <div class="notice ${f.possible?'green':''}" style="margin-bottom:18px"><strong>Conclusão das leituras até 5 de dezembro.</strong>
+ ${f.neededDays?`Faltam ${f.remaining} páginas, distribuídas em ${f.neededDays} dias de leitura, até ${formatDay(f.last)}, respeitando ${f.cap} páginas diárias.`:'Todas as páginas das apostilas principais foram confirmadas.'}
+ ${!f.possible?'O cálculo ultrapassa o prazo: ajuste seus dias disponíveis.':''}
+ Dias exclusivos de simulado: ${benchmarkDates().map(x=>formatDay(x.date)).join(' · ')}.</div>
+ <div class="grid maincol"><div class="card">
+ <div class="sectionline"><h2>Próxima atividade</h2><span class="badge goldish">${day?formatDay(day.date):'Plano concluído'}</span></div>
+ ${!day?'<p>Leituras e simulados concluídos. Veja os resultados e prepare a revisão.</p>':
+ day.kind==='simulation'?`<div class="notice blue"><strong>${htmlSafe(day.title)}</strong><p>Hoje só haverá o simulado: 70 questões, sem leitura de apostilas, sem treino adicional e sem flashcards.</p></div>
+ <button class="btn gold" data-action="day" data-date="${day.date}">Fazer o simulado →</button>`:
+ `<p><strong>${day.pages} páginas</strong> divididas em ${day.chunks.length} trecho(s) de apostila.</p>
  ${progress(p.read,day.pages)}<p class="small muted">${p.read}/${day.pages} páginas confirmadas</p>
- <div class="stage-summary"><span>${p.quiz?'✓':'○'} Questões relacionadas</span><span>${p.flash?'✓':'○'} Revisão</span></div>
- <div class="notice blue">Próxima etapa: <strong>${status==='read'?'Leitura das apostilas':status==='quiz'?'Questões do conteúdo estudado':status==='flash'?'Flashcards do assunto':'Concluído'}</strong></div>
- <button class="btn primary" data-action="resume">Retomar atividade →</button>`:
- '<div class="empty">Nenhuma leitura pendente no plano atual. Continue com revisões e simulados.</div>'}
+ <div class="stage-summary"><span>${p.quiz?'✓':'○'} Questões do conteúdo</span><span>${p.flash?'✓':'○'} Flashcards</span></div>
+ <div class="notice blue">Etapa: <strong>${status==='read'?'Leitura':status==='quiz'?'Questões alinhadas aos PDFs':status==='flash'?'Revisão':'Concluída'}</strong></div>
+ <button class="btn primary" data-action="resume">Continuar →</button>`}
  </div><div class="card"><h3>Progresso por disciplina</h3>
- ${subjects.map(a=>{let docs=primaryDocs().filter(d=>d.area===a),total=docs.reduce((sum,d)=>sum+d.pages,0),
- done=docs.reduce((sum,d)=>sum+confirmedPagesFor(d),0);
- return `<div class="subject"><div class="subhead"><span>${a}</span><span class="subject-pill">${done}/${total} págs.</span></div>${progress(done,total)}</div>`}).join('')}
- <div class="divider"></div><p class="small muted">O Vade Mecum e as versões sintéticas não entram na meta. Permanecem na biblioteca.</p>
+ ${subjects.map(a=>{const docs=primaryDocs().filter(d=>d.area===a),total=docs.reduce((n,d)=>n+d.pages,0),read=docs.reduce((n,d)=>n+confirmedPagesFor(d),0);
+ return `<div class="subject"><div class="subhead"><span>${a}</span><span class="subject-pill">${read}/${total} págs.</span></div>${progress(read,total)}</div>`}).join('')}
+ <div class="divider"></div><p class="small muted">O Vade Mecum permanece disponível na biblioteca, mas não entra na métrica.</p>
  <button class="btn" data-action="library">Abrir biblioteca →</button></div></div>`;
 }
+
 function renderAgenda(){
- const days=calcPlan(),f=feasibility();
- const focus=dashboardToday();
- $('#main').innerHTML=header('Agenda de estudos','Páginas equilibradas por dia, até 200, com apostilas completas e sem o Vade Mecum.',
- `<button class="btn" data-action="settings">Ajustar meus dias ⚙</button>`)+
- `<div class="notice ${f.possible?'green':''}"><strong>${f.remaining} páginas restantes.</strong>
- ${f.neededDays? `Distribuição em ${f.neededDays} dias de estudo. Previsão de término: <strong>${formatDay(f.last)}</strong>.
- ${f.possible?'Dentro do prazo de 5 de dezembro.':'Após o prazo de 5 de dezembro.'}`:'Leitura principal concluída.'}
- As páginas já confirmadas são preservadas. O Vade Mecum não entra na métrica.</div>
- <div class="grid maincol"><div class="card"><h2>Roteiro em foco</h2>
- ${focus?renderDayDetail(focus):'<p>Sem etapas de leitura pendentes.</p>'}
- </div><div class="card"><h3>Todos os dias de leitura</h3>
- ${days.map(d=>{const p=dayProgress(d);
- return `<div class="agenda-item ${p.read===d.pages&&p.quiz&&p.flash?'complete':''}">
- <div class="step-number">${dateOf(d.date).getDate()}</div><div>
- <h4>${htmlSafe(formatDay(d.date))}</h4>
- <p><strong>${d.pages} páginas</strong> · ${p.read} confirmadas</p>
- <p>${d.chunks.map(c=>htmlSafe(c.area)).filter((x,i,a)=>a.indexOf(x)===i).join(' + ')}</p></div>
- <button class="btn" data-action="day" data-date="${d.date}">${p.read===d.pages&&p.quiz&&p.flash?'✓ Concluído':'Abrir'}</button></div>`}).join('')}
+ const days=calcPlan(),f=feasibility(),focus=dashboardToday();
+ $('#main').innerHTML=header('Agenda até a prova','Leitura equilibrada, treino dos conteúdos estudados e três dias reservados exclusivamente para simulados.',
+ '<button class="btn" data-action="settings">Ajustar horários ⚙</button>')+
+ `<div class="notice blue"><strong>${f.remaining} páginas restantes, com até ${f.cap} páginas por dia de leitura.</strong>
+ ${f.neededDays?`Meta de leitura prevista até ${formatDay(f.last)}.`:'Leitura principal concluída.'}
+ Os três simulados têm 70 questões cada, dificuldade estruturada de forma equivalente e correção apenas ao final.</div>
+ ${mockProgressPanel()}
+ <div class="grid maincol"><div class="card"><h2>Atividade prioritária</h2>
+ ${focus?renderDayDetail(focus):'<p>Não há atividades pendentes.</p>'}</div>
+ <div class="card"><h3>Calendário completo</h3>
+ ${days.map(d=>{
+  const completed=dayDone(d.date),p=dayProgress(d);
+  return `<div class="agenda-item ${completed?'complete':''}" style="${d.kind==='simulation'?'background:#faf5ea;border:1px solid #e5cf9c;border-radius:10px;':''}">
+   <div class="step-number">${dateOf(d.date).getDate()}</div><div>
+   <h4>${htmlSafe(formatDay(d.date))}</h4>
+   ${d.kind==='simulation'?`<p><strong>${htmlSafe(d.title)}</strong> · 70 questões, apenas prova</p>`:
+   `<p><strong>${d.pages} páginas</strong> · ${p.read} confirmadas</p>
+   <p>${[...new Set(d.chunks.map(c=>c.area))].join(' + ')}</p>`}</div>
+   <button class="btn" data-action="day" data-date="${d.date}">${completed?'✓ Concluído':'Abrir →'}</button></div>`}).join('')}
  </div></div>`;
 }
+
 function renderDayDetail(d){
+ if(d.kind==='simulation'){
+  const result=state.mockResults?.[d.simIndex],session=state.mockSessions?.[d.simIndex];
+  return `<div class="eyebrow">DIA EXCLUSIVO DE SIMULADO</div>
+  <h3>${htmlSafe(d.title)}</h3><p class="small muted">${formatDay(d.date)} · 70 questões, cinco alternativas por questão.</p>
+  <p><strong>10 Português · 10 Inglês · 50 Psicologia</strong></p>
+  <div class="notice blue">Neste dia não há leitura, exercícios extras ou flashcards. A correção será exibida ao final para preservar as condições da prova.</div>
+  <p class="small muted">${result?'Resultado registrado: '+result.correct+' de 70 acertos.':session?'Simulado iniciado; retome na questão '+(session.at+1)+'.':'O simulado ficará registrado para comparação com os outros dois.'}</p>
+  <button class="btn gold" data-action="${result?'mockresult':'mockexam'}" data-index="${d.simIndex}">
+  ${result?'Ver meu resultado':session?'Retomar simulado':'Iniciar o simulado'}</button>`;
+ }
  const p=dayProgress(d),stage=nextStage(d),questions=relatedQuestions(d);
  return `<div class="eyebrow">${htmlSafe(formatDay(d.date))}</div>
  <h3>Meta de ${d.pages} páginas</h3>${progress(p.read,d.pages)}
- <p class="small muted">${p.read}/${d.pages} páginas confirmadas. Leia os trechos na ordem e registre somente após a leitura.</p>
+ <p class="small muted">${p.read}/${d.pages} páginas confirmadas. Os trechos seguem a sequência das apostilas.</p>
  ${d.chunks.map((c,i)=>`<div class="agenda-item ${chunkReadCount(c)===c.pages?'complete':''}">
- <span class="step-number">${i+1}</span><div>
- <h4>${htmlSafe(c.title)}</h4><p>${htmlSafe(c.area)} · páginas ${c.start} a ${c.end}
- (${c.pages} páginas; ${chunkReadCount(c)} confirmadas)</p></div>
+ <span class="step-number">${i+1}</span><div><h4>${htmlSafe(c.title)}</h4>
+ <p>${htmlSafe(c.area)} · páginas ${c.start}–${c.end} (${c.pages} páginas, ${chunkReadCount(c)} confirmadas)</p></div>
  <button class="btn" data-action="readchunk" data-date="${d.date}" data-id="${c.id}">Ler →</button></div>`).join('')}
- <div class="stage-summary"><span>${p.quiz?'✓':'○'} ${questions.length} questões compatíveis no banco</span>
- <span>${p.flash?'✓':'○'} Revisão do tema</span></div>
- ${questions.length===0?'<p class="small muted">Ainda não há questões autorais deste assunto no banco; não serão exibidas perguntas de conteúdos diferentes.</p>':''}
+ <div class="stage-summary"><span>${p.quiz?'✓':'○'} ${questions.length} questões pertinentes</span>
+ <span>${p.flash?'✓':'○'} Revisão do assunto</span></div>
+ ${questions.length===0?'<p class="small muted">Não há perguntas específicas no banco para este trecho; não serão usadas questões de outras matérias.</p>':''}
  <button class="btn primary" data-action="day" data-date="${d.date}">
- ${stage==='read'?'Continuar leitura →':stage==='quiz'?'Fazer questões do tema →':stage==='flash'?'Revisar o tema →':'Etapa concluída ✓'}</button>`;
+ ${stage==='read'?'Continuar leitura →':stage==='quiz'?'Resolver questões do conteúdo →':stage==='flash'?'Revisar o conteúdo →':'Etapa concluída ✓'}</button>`;
 }
-
 function renderLibrary(){let filter=catalog.filter(d=>(libraryArea==='Todos'||d.area===libraryArea)&&(libraryKind==='Todos'||d.kind===libraryKind)&&(`${d.title} ${d.group}`.toLocaleLowerCase('pt-BR')).includes(libraryText.toLocaleLowerCase('pt-BR')));
  $('#main').innerHTML=header('Biblioteca de estudos no Google Drive','Suas apostilas já estão vinculadas: não é necessário enviar os arquivos novamente.')+`<div class="notice blue"><strong>54 PDFs vinculados ao Google Drive.</strong> Eles continuam privados. Para lê-los, entre na conta Google que tem acesso à pasta. <a href="https://drive.google.com/drive/folders/1bEntKpPKJWVesGKYG4yRY0kRuYAR3nou" target="_blank" rel="noopener noreferrer" style="text-decoration:underline">Acessar minha pasta Google Drive ↗</a></div><div class="toolbar"><a class="btn primary" href="https://drive.google.com/drive/folders/1bEntKpPKJWVesGKYG4yRY0kRuYAR3nou" target="_blank" rel="noopener noreferrer">Entrar no Google Drive ↗</a><input id="librarySearch" placeholder="Pesquisar por assunto, autor ou título" value="${htmlSafe(libraryText)}"><select id="libraryArea">${['Todos','Português','Inglês','Psicologia'].map(a=>`<option ${a===libraryArea?'selected':''}>${a}</option>`).join('')}</select><select id="libraryKind">${['Todos','Apostila completa','PDF sintético','Lista de exercícios','Vade Mecum'].map(a=>`<option ${a===libraryKind?'selected':''}>${a}</option>`).join('')}</select></div><p class="muted small">${filter.length} materiais encontrados. ${Object.keys(GOOGLE_DRIVE_MAP).length} disponíveis no Drive; ${Object.keys(state.files).length} armazenados também no navegador. O acesso requer autorização da sua conta Google.</p><div id="bulkImportStatus"></div>${renderBulkPending()}<div>${filter.map(d=>`<div class="doc"><div class="doc-info"><p class="doc-title">${htmlSafe(d.title)}</p><span class="doc-tag">${htmlSafe(d.area)}</span><span class="doc-tag">${htmlSafe(d.kind)}</span><small>${d.pages} páginas · ${htmlSafe(d.group)}</small>${googleDocId(d.id)?'<div class="small" style="color:#298667;margin-top:7px">✓ Arquivo vinculado ao seu Google Drive</div>':state.files[d.id]?'<div class="small" style="color:#298667;margin-top:7px">✓ PDF salvo neste navegador</div>':''}</div><div class="doc-actions">${googleDocId(d.id)?'<a class="btn" target="_blank" rel="noopener noreferrer" href="'+googleDocURL(d.id)+'">Abrir no Drive ↗</a>':`<button class="btn" data-action="attach" data-id="${d.id}">${state.files[d.id]?'Trocar PDF':'Adicionar PDF'}</button>`}<button class="btn primary" data-action="reader" data-id="${d.id}">Ler →</button></div></div>`).join('')}</div>`;
  $('#librarySearch').addEventListener('input',e=>{libraryText=e.target.value;renderLibrary();$('#librarySearch').focus();$('#librarySearch').setSelectionRange(libraryText.length,libraryText.length)});$('#libraryArea').addEventListener('change',e=>{libraryArea=e.target.value;renderLibrary()});$('#libraryKind').addEventListener('change',e=>{libraryKind=e.target.value;renderLibrary()});
