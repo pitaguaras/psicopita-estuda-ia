@@ -219,7 +219,7 @@ function unreadRuns(){
 }
 function calcPlan(){
  const cfg=state.settings;
- const start=cfg.startDate>today()?cfg.startDate:today();
+ const start=cfg.startDate||today();
  const daysAvailable=Array.isArray(cfg.days)&&cfg.days.length?cfg.days:[1,2,3,4,5,6];
  const cap=Math.min(200,Math.max(1,Number(cfg.pagesPerDay)||200));
  const fingerprint=JSON.stringify({start,days:daysAvailable.slice().sort(),cap,version:4,books:primaryDocs().map(d=>[d.id,d.pages])});
@@ -262,7 +262,7 @@ function feasibility(){
  const seen=docs.reduce((sum,d)=>sum+confirmedPagesFor(d),0);
  const remaining=Math.max(0,total-seen);
  const cap=Math.min(200,Math.max(1,Number(cfg.pagesPerDay)||200));
- const start=cfg.startDate>today()?cfg.startDate:today();
+ const start=cfg.startDate||today();
  let dt=start,workDays=0;
  const available=Array.isArray(cfg.days)&&cfg.days.length?cfg.days:[1,2,3,4,5,6];
  while(dt<=deadline){if(available.includes(dateOf(dt).getDay()))workDays++;dt=stepDate(dt,1)}
@@ -476,20 +476,20 @@ async function chooseBulk(index){
 async function attach(id){attachingId=id;$('#pdfFileInput').value='';$('#pdfFileInput').click()}
 async function handlePdf(file){if(!attachingId||!file)return;if(!file.name.toLowerCase().endsWith('.pdf')&&file.type!=='application/pdf'){toast('Escolha um arquivo PDF.');return}let id=attachingId;await dbPut(id,file);state.files[id]={name:file.name,size:file.size,when:nowIso(),device:true};persist();toast('PDF guardado na sua biblioteca privada.');if(currentView==='reader')await openReader(id,reader.day);else renderLibrary();if(cloudClient&&cloudUser)await uploadCloudPDF(id,file).catch(()=>toast('PDF salvo localmente, mas envio privado à nuvem não concluído.'))}
 async function getPdfUrl(id){let file=await dbGet(id);if(file){if(reader.blobUrl)URL.revokeObjectURL(reader.blobUrl);reader.blobUrl=URL.createObjectURL(file);return reader.blobUrl}if(cloudClient&&cloudUser){let r=await cloudClient.storage.from('study-pdfs').createSignedUrl(`${cloudUser.id}/${id}.pdf`,3600);if(!r.error&&r.data?.signedUrl)return r.data.signedUrl}const driveId=googleDocId(id);if(driveId)return 'https://drive.google.com/file/d/'+encodeURIComponent(driveId)+'/preview';return null}
-async function openReader(id,date){let d=catalog.find(x=>x.id===id);if(!d)return;reader.id=id;reader.day=date||null;let goal=date?calcPlan().find(x=>x.date===date&&x.id===id):null;let checked=new Set(state.read[id]||[]);let first=goal?goal.start:1,last=goal?goal.end:d.pages;let next=first;while(next<last&&checked.has(next))next++;reader.page=next;currentView='reader';$('#breadcrumb').innerHTML='Biblioteca <b>/</b> Leitor integrado';$('#main').innerHTML=`${header('Leitor de PDF',htmlSafe(d.title),'<button class="btn" data-action="library">← Voltar à biblioteca</button>')}<div class="loading">Carregando leitor privado...</div>`;let url=await getPdfUrl(id);reader.url=url;renderReader();}
+async function openReader(id,date){let d=catalog.find(x=>x.id===id);if(!d)return;reader.id=id;reader.day=date||null;let goal=date?calcPlan().find(x=>x.date===date)?.chunks.find(c=>c.id===id):null;let checked=new Set(state.read[id]||[]);let first=goal?goal.start:1,last=goal?goal.end:d.pages;let next=first;while(next<last&&checked.has(next))next++;reader.page=next;currentView='reader';$('#breadcrumb').innerHTML='Biblioteca <b>/</b> Leitor integrado';$('#main').innerHTML=`${header('Leitor de PDF',htmlSafe(d.title),'<button class="btn" data-action="library">← Voltar à biblioteca</button>')}<div class="loading">Carregando leitor privado...</div>`;let url=await getPdfUrl(id);reader.url=url;renderReader();}
 function readerIsDrive(){return !!googleDocId(reader.id)&&String(reader.url||'').startsWith('https://drive.google.com/file/d/')}
 function updateReaderTracking(){
  let d=catalog.find(x=>x.id===reader.id);if(!d||currentView!=='reader')return;
- let goal=reader.day?calcPlan().find(x=>x.date===reader.day&&x.id===d.id):null;
+ let goal=reader.day?calcPlan().find(x=>x.date===reader.day)?.chunks.find(c=>c.id===d.id):null;
  let min=goal?goal.start:1,max=goal?goal.end:d.pages,seen=state.read[d.id]||[];
  reader.page=Math.min(max,Math.max(min,reader.page));
  let checked=seen.includes(reader.page);
  let setText=(id,value)=>{let el=document.getElementById(id);if(el)el.textContent=value};
  setText('readerFrameStatus','Página para confirmar: '+reader.page+' de '+d.pages);
  setText('readerPageCounter',reader.page+' / '+d.pages);
- setText('readerProgressText',goal?dayProgress(goal).read+'/'+goal.pages+' páginas da meta':seen.length+'/'+d.pages+' páginas confirmadas');
+ setText('readerProgressText',goal?chunkReadCount(goal)+'/'+goal.pages+' páginas da meta':seen.length+'/'+d.pages+' páginas confirmadas');
  let bar=document.getElementById('readerProgressBar');
- if(bar)bar.innerHTML=goal?progress(dayProgress(goal).read,goal.pages):progress(seen.length,d.pages);
+ if(bar)bar.innerHTML=goal?progress(chunkReadCount(goal),goal.pages):progress(seen.length,d.pages);
  let prev=document.querySelector('[data-action="prevpage"]');
  let next=document.querySelector('[data-action="nextpage"]');
  let mark=document.querySelector('[data-action="markpage"]');
@@ -507,7 +507,7 @@ function updateReaderTracking(){
 }
 function moveReaderPage(delta){
  let d=catalog.find(x=>x.id===reader.id);if(!d)return;
- let goal=reader.day?calcPlan().find(x=>x.date===reader.day&&x.id===d.id):null;
+ let goal=reader.day?calcPlan().find(x=>x.date===reader.day)?.chunks.find(c=>c.id===d.id):null;
  reader.page=Math.min(goal?goal.end:d.pages,Math.max(goal?goal.start:1,reader.page+delta));
  updateReaderTracking();
 }
@@ -517,13 +517,81 @@ async function readerFullscreen(){
  try{if(document.fullscreenElement)await document.exitFullscreen();else if(frame.requestFullscreen)await frame.requestFullscreen();else toast('A tela cheia não é suportada neste navegador.');}
  catch(e){console.warn('Modo tela cheia indisponível',e);toast('Não foi possível ativar tela cheia neste navegador.')}
 }
-function renderReader(){let d=catalog.find(x=>x.id===reader.id);if(!d)return;let goal=reader.day?calcPlan().find(x=>x.date===reader.day&&x.id===d.id):null;let min=goal?goal.start:1,max=goal?goal.end:d.pages,seen=state.read[d.id]||[],isChecked=seen.includes(reader.page);reader.page=Math.min(max,Math.max(min,reader.page));
+function renderReader(){let d=catalog.find(x=>x.id===reader.id);if(!d)return;let goal=reader.day?calcPlan().find(x=>x.date===reader.day)?.chunks.find(c=>c.id===d.id):null;let min=goal?goal.start:1,max=goal?goal.end:d.pages,seen=state.read[d.id]||[],isChecked=seen.includes(reader.page);reader.page=Math.min(max,Math.max(min,reader.page));
  $('#main').innerHTML=header('Leitor de PDF',htmlSafe(d.title),'<button class="btn" data-action="library">← Biblioteca</button>')+`<div class="reader-layout"><div class="card reader-document-card"><div class="reader-toolbar"><div class="reader-titleline"><span class="badge">${htmlSafe(d.area)}</span> <span class="badge goldish">${goal?`Meta ${min}–${max}`:'Consulta livre'}</span><span class="status" id="readerFrameStatus">Página para confirmar: ${reader.page} de ${d.pages}</span></div><div class="reader-actions"><button class="btn" data-action="fullscreenreader" title="Ampliar PDF em tela cheia">⛶ Tela cheia</button></div></div><div class="reader-frame" id="readerFrame">${reader.url?`<iframe id="readerDocument" title="${htmlSafe(d.title)}" src="${htmlSafe(reader.url)}${readerIsDrive()?'':'#page='+reader.page+'&zoom=page-width'}" referrerpolicy="no-referrer" allowfullscreen loading="eager"></iframe>`:`<div class="empty"><div class="hint-icon">▤</div><h3>PDF ainda não carregado</h3><p>O arquivo original fica sob seu controle. Adicione-o na biblioteca para usar este leitor.</p><button class="btn primary" data-action="attach" data-id="${d.id}">Adicionar PDF ao dispositivo</button></div>`}</div><div class="reader-nav"><button class="btn" data-action="prevpage" ${reader.page<=min?'disabled':''}>← Página a confirmar</button><strong class="small" id="readerPageCounter">${reader.page} / ${d.pages}</strong><button class="btn" data-action="nextpage" ${reader.page>=max?'disabled':''}>Próxima a confirmar →</button></div>${readerIsDrive()?'<p class="reader-instructions"><strong>Como usar:</strong> passe as páginas dentro do PDF usando a rolagem e os controles do Google Drive. Os botões acima alteram apenas a página que o PsicoPita registra; não movimentam a prévia. Confirmar uma página não reinicia mais o PDF.</p>':'<p class="reader-instructions">Use as setas para navegar no PDF. Confirme a página somente depois da leitura.</p>'}</div>
- <div class="card reader-progress-card"><h3>${goal?'Leitura dirigida do dia':'Acompanhamento de leitura'}</h3><p class="small muted">${goal?`Leia somente as páginas ${goal.start} a ${goal.end} no roteiro. Para consultar outras páginas, use a opção de leitura livre.`:'Consulta livre à apostila. A leitura será registrada somente quando você confirmar uma página.'}</p><div id="readerProgressBar">${goal?progress(dayProgress(goal).read,goal.pages):progress(seen.length,d.pages)}</div><div class="stage-summary"><span id="readerProgressText">${goal?`${dayProgress(goal).read}/${goal.pages} páginas da meta`:`${seen.length}/${d.pages} páginas confirmadas`}</span></div><button class="btn primary" ${!reader.url||isChecked?'disabled':''} data-action="markpage">${isChecked?'✓ Página já confirmada':'✓ Li a página '+reader.page}</button><p class="help">Abrir um PDF não conta como leitura: confirme ao terminar. A prévia do Google Drive pode não acompanhar os botões da agenda; confira a página indicada antes de confirmar. Se aparecer uma tela de acesso, entre com sua conta Google.</p>${googleDocId(d.id)?`<p class="help">Se precisar de mais zoom ou a prévia não abrir, utilize o leitor do Google Drive em outra aba:</p><a class="btn" target="_blank" rel="noopener noreferrer" href="${googleDocURL(d.id)}">Abrir PDF original no Google Drive ↗</a>`:''}${goal?`<button class="btn" data-action="freeread">Consultar PDF completo</button>`:''}${goal&&nextStage(goal)!=='read'?`<div class="divider"></div><button class="btn gold" data-action="day" data-date="${goal.date}">Avançar para ${nextStage(goal)==='quiz'?'questões':nextStage(goal)==='flash'?'flashcards':'agenda'} →</button>`:''}</div></div>`;
+ <div class="card reader-progress-card"><h3>${goal?'Leitura dirigida do dia':'Acompanhamento de leitura'}</h3><p class="small muted">${goal?`Leia somente as páginas ${goal.start} a ${goal.end} no roteiro. Para consultar outras páginas, use a opção de leitura livre.`:'Consulta livre à apostila. A leitura será registrada somente quando você confirmar uma página.'}</p><div id="readerProgressBar">${goal?progress(chunkReadCount(goal),goal.pages):progress(seen.length,d.pages)}</div><div class="stage-summary"><span id="readerProgressText">${goal?`${chunkReadCount(goal)}/${goal.pages} páginas da meta`:`${seen.length}/${d.pages} páginas confirmadas`}</span></div><button class="btn primary" ${!reader.url||isChecked?'disabled':''} data-action="markpage">${isChecked?'✓ Página já confirmada':'✓ Li a página '+reader.page}</button>${goal?`<div style="margin-top:12px"><button class="btn primary" style="width:100%" data-action="completechunk">✓ Concluí a leitura das páginas ${goal.start}–${goal.end}</button><p class="small muted">Confirme esse intervalo apenas quando tiver lido todas as páginas.</p><label class="small" for="readerThroughPage">Se leu apenas parte, informe a última página:</label><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px"><input id="readerThroughPage" type="number" min="${goal.start}" max="${goal.end}" value="${reader.page}" style="width:90px;padding:10px;border:1px solid #ddd;border-radius:7px"><button class="btn" data-action="markthrough">Registrar até esta página</button></div></div>`:''}<p class="help">Abrir um PDF não conta como leitura: confirme ao terminar. A prévia do Google Drive pode não acompanhar os botões da agenda; confira a página indicada antes de confirmar. Se aparecer uma tela de acesso, entre com sua conta Google.</p>${googleDocId(d.id)?`<p class="help">Se precisar de mais zoom ou a prévia não abrir, utilize o leitor do Google Drive em outra aba:</p><a class="btn" target="_blank" rel="noopener noreferrer" href="${googleDocURL(d.id)}">Abrir PDF original no Google Drive ↗</a>`:''}${goal?`<button class="btn" data-action="freeread">Consultar PDF completo</button>`:''}${false?`<div class="divider"></div><button class="btn gold" data-action="day" data-date="${goal.date}">Avançar para ${nextStage(goal)==='quiz'?'questões':nextStage(goal)==='flash'?'flashcards':'agenda'} →</button>`:''}</div></div>`;
 }
-function markPage(){if(!reader.url){toast('Entre no Google Drive para abrir a apostila.');return}let id=reader.id;state.read[id]=state.read[id]||[];if(!state.read[id].includes(reader.page))state.read[id].push(reader.page);persist();let g=reader.day?calcPlan().find(x=>x.date===reader.day):null;if(g&&dayProgress(g).read===g.pages){toast('Meta de leitura concluída! Agora vêm as questões.');startQuestions(g.area,10,g.date);return}let max=g?g.end:catalog.find(x=>x.id===id).pages;if(reader.page<max)reader.page++;updateReaderTracking()}
+
+function recordRange(id,from,to){
+ const d=catalog.find(x=>x.id===id);
+ if(!d)return;
+ const pages=new Set((state.read[id]||[]).map(Number));
+ for(let p=Math.max(1,from);p<=Math.min(d.pages,to);p++)pages.add(p);
+ state.read[id]=[...pages].sort((a,b)=>a-b);
+ persist();
+}
+function resumeReaderOrNext(){
+ const day=reader.day?calcPlan().find(x=>x.date===reader.day):null;
+ const chunk=day?.chunks.find(c=>c.id===reader.id);
+ if(day&&chunk&&chunkReadCount(chunk)>=chunk.pages){startDay(reader.day);return}
+ updateReaderTracking();
+}
+function completeChunk(){
+ const day=reader.day?calcPlan().find(x=>x.date===reader.day):null;
+ const chunk=day?.chunks.find(c=>c.id===reader.id);
+ if(!chunk||!reader.url){toast('Abra a leitura da agenda para confirmar o trecho.');return}
+ recordRange(chunk.id,chunk.start,chunk.end);
+ toast('Leitura confirmada. Avançando no roteiro.');
+ startDay(day.date);
+}
+function markThrough(){
+ const day=reader.day?calcPlan().find(x=>x.date===reader.day):null;
+ const chunk=day?.chunks.find(c=>c.id===reader.id);
+ if(!chunk||!reader.url)return;
+ const number=Number(document.getElementById('readerThroughPage')?.value);
+ if(!Number.isInteger(number)||number<chunk.start||number>chunk.end){toast('Informe uma página válida do trecho.');return}
+ recordRange(reader.id,chunk.start,number);
+ reader.page=Math.min(chunk.end,number+1);
+ toast('Páginas confirmadas até '+number+'.');
+ resumeReaderOrNext();
+}
+function markPage(){
+ if(!reader.url){toast('Não foi possível abrir o PDF.');return}
+ recordRange(reader.id,reader.page,reader.page);
+ const day=reader.day?calcPlan().find(x=>x.date===reader.day):null;
+ const chunk=day?.chunks.find(c=>c.id===reader.id);
+ const max=chunk?chunk.end:catalog.find(x=>x.id===reader.id).pages;
+ if(reader.page<max)reader.page++;
+ resumeReaderOrNext();
+}
+
 function resume(){let d=dashboardToday();if(d)startDay(d.date);else show('agenda')}
-function startDay(date){let d=calcPlan().find(x=>x.date===date);if(!d||d.rest)return;const stage=nextStage(d);if(stage==='read')openReader(d.id,d.date);else if(stage==='quiz')startQuestions(d.area,10,d.date);else if(stage==='flash')startFlash(d.area,d.date);else show('agenda')}
+function startDay(date){let d=calcPlan().find(x=>x.date===date);if(!d||d.rest)return;const stage=nextStage(d);if(stage==='read'){const c=remainingChunk(d);if(c)return openReader(c.id,d.date);}else if(stage==='quiz')return startQuestions(null,10,d.date);else if(stage==='flash')return startFlash(null,d.date);else show('agenda')}
+
+const DOC_TOPICS={
+ pt01:[],pt03:[],pt05:['Coesão','Reescrita'],pt10:['Ortografia'],pt12:['Morfologia'],
+ pt13:['Morfologia'],pt14:['Morfologia'],pt17:['Sintaxe'],pt18:['Sintaxe'],
+ pt23:['Concordância','Crase','Sintaxe'],
+ cp01:['Vocabulário','Gramática','Classes de palavras','Tempos verbais','Modal verbs'],
+ cp03:['Gramática','Conectores','Voz passiva','Conditionals','Modal verbs','Tempos verbais'],
+ cp05:['Gramática','Conectores','Voz passiva','Conditionals','Tempos verbais'],
+ cp07:['Leitura'],
+ cp10:['Ética'],cp12:['Avaliação psicológica'],cp14:['Documentos psicológicos','TDICs'],
+ cp16:['Gestão de pessoas','Organizações'],cp18:['Organizações','Gestão de pessoas'],
+ cp20:['Processos grupais'],cp22:['Crises e emergências'],
+ cp24:['Saúde do trabalhador','Normas regulamentadoras'],
+ cp26:['Ergonomia','Normas regulamentadoras']
+};
+function relatedQuestions(day){
+ if(!day?.chunks?.length)return [];
+ const topics={};
+ for(const c of day.chunks){
+  if(!topics[c.area])topics[c.area]=new Set();
+  for(const topic of DOC_TOPICS[c.id]||[])topics[c.area].add(topic);
+ }
+ return pool().filter(q=>topics[q.subject]?.has(q.topic));
+}
+
 function pool(area){return QUESTION_BANK.map((q,i)=>({...{subject:q[0],question:q[1],options:q[2],answer:q[3],explain:q[4],topic:q[5]},id:i})).filter(q=>!area||q.subject===area)}
 function shuffled(a){let b=a.slice();for(let i=b.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b}
 function startQuestions(area,count=10,day=null,sim=false){let ids=sim?[...shuffled(pool('Português')).slice(0,10),...shuffled(pool('Inglês')).slice(0,10),...shuffled(pool('Psicologia')).slice(0,50)].map(q=>q.id):shuffled(pool(area)).slice(0,count).map(q=>q.id);state.session={ids,at:0,day,area:area||'Todas',sim,results:[],started:nowIso()};persist();renderQuestions()}
@@ -656,7 +724,7 @@ async function syncUp(){
 }
 async function uploadCloudPDF(id,file){if(!cloudClient||!cloudUser)return;let {error}=await cloudClient.storage.from('study-pdfs').upload(`${cloudUser.id}/${id}.pdf`,file,{upsert:true,contentType:'application/pdf'});if(error)throw error}
 async function logout(){if(cloudClient&&cloudUser)await syncUp();if(cloudClient)await cloudClient.auth.signOut();cloudUser=null;state=clone(DEFAULT);localStorage.setItem(key,JSON.stringify(state));renderSettings();toast('Você saiu da conta. Seus dados sincronizados continuam protegidos no Supabase.')}
-async function handleAction(b){let act=b.dataset.action;try{if(['dashboard','agenda','library','questions','review','tutor','settings'].includes(act)){state.session=act==='questions'?state.session:state.session;show(act);return}switch(act){case 'resume':resume();break;case 'day':startDay(b.dataset.date);break;case 'attach':attach(b.dataset.id);break;case 'bulkimport':bulkImport();break;case 'bulkchoose':await chooseBulk(Number(b.dataset.index));break;case 'reader':openReader(b.dataset.id,null);break;case 'prevpage':moveReaderPage(-1);break;case 'nextpage':moveReaderPage(1);break;case 'fullscreenreader':await readerFullscreen();break;case 'markpage':markPage();break;case 'freeread':openReader(reader.id,null);break;case 'startquiz':startQuestions(b.dataset.area,10);break;case 'startsim':startQuestions(null,70,null,true);break;case 'answer':answer(b.dataset.choice);break;case 'nextquestion':state.session.at++;persist();renderQuestions();break;case 'stopquiz':state.session=null;persist();show('questions');break;case 'finishquiz':finishQuiz();break;case 'startcards':startFlash(b.dataset.area);break;case 'flipcard':flashSession.flipped=!flashSession.flipped;renderReview();break;case 'flashnext':nextFlash();break;case 'finishcards':finishCards();break;case 'export':exportData();break;case 'import':$('#restoreInput').click();break;case 'login':login();break;case 'loginGoogle':loginGoogle();break;case 'logout':logout();break;case 'askTutor':askTutor();break;default:break}}catch(e){console.error(e);toast('Não foi possível executar. Tente novamente.')}}
+async function handleAction(b){let act=b.dataset.action;try{if(['dashboard','agenda','library','questions','review','tutor','settings'].includes(act)){state.session=act==='questions'?state.session:state.session;show(act);return}switch(act){case 'resume':resume();break;case 'day':startDay(b.dataset.date);break;case 'readchunk':openReader(b.dataset.id,b.dataset.date);break;case 'attach':attach(b.dataset.id);break;case 'bulkimport':bulkImport();break;case 'bulkchoose':await chooseBulk(Number(b.dataset.index));break;case 'reader':openReader(b.dataset.id,null);break;case 'prevpage':moveReaderPage(-1);break;case 'nextpage':moveReaderPage(1);break;case 'fullscreenreader':await readerFullscreen();break;case 'markpage':markPage();break;case 'completechunk':completeChunk();break;case 'markthrough':markThrough();break;case 'freeread':openReader(reader.id,null);break;case 'startquiz':startQuestions(b.dataset.area,10);break;case 'startsim':startQuestions(null,70,null,true);break;case 'answer':answer(b.dataset.choice);break;case 'nextquestion':state.session.at++;persist();renderQuestions();break;case 'stopquiz':state.session=null;persist();show('questions');break;case 'finishquiz':finishQuiz();break;case 'startcards':startFlash(b.dataset.area);break;case 'flipcard':flashSession.flipped=!flashSession.flipped;renderReview();break;case 'flashnext':nextFlash();break;case 'finishcards':finishCards();break;case 'export':exportData();break;case 'import':$('#restoreInput').click();break;case 'login':login();break;case 'loginGoogle':loginGoogle();break;case 'logout':logout();break;case 'askTutor':askTutor();break;default:break}}catch(e){console.error(e);toast('Não foi possível executar. Tente novamente.')}}
 async function start(){try{catalog=JSON.parse(document.getElementById('embedded-catalog').textContent)}catch{catalog=[];toast('Catálogo indisponível; abra o site pela hospedagem HTTP.')}document.body.addEventListener('click',e=>{let b=e.target.closest('[data-action]');if(b)handleAction(b)});document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.view)));$('#mobileMenu').onclick=()=>document.querySelector('.sidebar').classList.toggle('open');$('#pdfFileInput').addEventListener('change',e=>handlePdf(e.target.files[0]));$('#pdfBulkInput').addEventListener('change',e=>handleBulkPdfs(e.target.files));$('#restoreInput').addEventListener('change',e=>e.target.files[0]&&importData(e.target.files[0]));await setupCloud();show('dashboard')}
 start();
 
