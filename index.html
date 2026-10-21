@@ -594,17 +594,46 @@ function relatedQuestions(day){
 
 function pool(area){return QUESTION_BANK.map((q,i)=>({...{subject:q[0],question:q[1],options:q[2],answer:q[3],explain:q[4],topic:q[5]},id:i})).filter(q=>!area||q.subject===area)}
 function shuffled(a){let b=a.slice();for(let i=b.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b}
-function startQuestions(area,count=10,day=null,sim=false){let ids=sim?[...shuffled(pool('Português')).slice(0,10),...shuffled(pool('Inglês')).slice(0,10),...shuffled(pool('Psicologia')).slice(0,50)].map(q=>q.id):shuffled(pool(area)).slice(0,count).map(q=>q.id);state.session={ids,at:0,day,area:area||'Todas',sim,results:[],started:nowIso()};persist();renderQuestions()}
+function startQuestions(area,count=10,day=null,sim=false){
+ let ids;
+ if(sim)ids=[...shuffled(pool('Português')).slice(0,10),...shuffled(pool('Inglês')).slice(0,10),...shuffled(pool('Psicologia')).slice(0,50)].map(q=>q.id);
+ else if(day){
+  const planned=calcPlan().find(d=>d.date===day);
+  ids=shuffled(relatedQuestions(planned)).slice(0,count).map(q=>q.id);
+  if(!ids.length){
+   state.agenda[day]={...(state.agenda[day]||{}),quiz:true,quizNotAvailable:true};
+   persist();
+   toast('Ainda não há questões autorais alinhadas a este assunto. Nenhuma pergunta aleatória será usada.');
+   return startFlash(null,day);
+  }
+ }else ids=shuffled(pool(area)).slice(0,count).map(q=>q.id);
+ state.session={ids,at:0,day,area:area||'Todas',sim,results:[],started:nowIso()};
+ persist();renderQuestions();
+}
 function renderQuestions(){currentView='questions';let s=state.session;
  if(!s){$('#main').innerHTML=header('Questões e simulados','Questões autorais baseadas nos assuntos do edital, com gabarito comentado e identificação da disciplina.')+`<div class="notice blue">Questões elaboradas para estudo. Não são reproduções de provas nem possuem garantia de prever questões da Cesgranrio.</div><div class="grid third">${subjects.map(a=>`<div class="card"><h3>${a}</h3><p class="small muted">${pool(a).length} questões originais disponíveis</p><button class="btn primary" data-action="startquiz" data-area="${a}">Treinar 10 questões →</button></div>`).join('')}</div><div class="card" style="margin-top:18px"><h3>Simulado de 70 questões</h3><p class="small muted">10 de Português + 10 de Inglês + 50 de Psicologia. Questões autorais, com correção e registro de desempenho.</p><button class="btn gold" data-action="startsim">Iniciar simulado de 70 questões →</button></div>`;return}
  let total=s.ids.length,position=s.at;if(position>=total){let correct=s.results.filter(x=>x.correct).length;$('#main').innerHTML=header('Atividade concluída','Seu resultado foi registrado no histórico de estudos.')+`<div class="card" style="max-width:740px"><div class="eyebrow">SEU RESULTADO</div><div class="metric-number">${correct}/${total}</div><h3>${Math.round(100*correct/total)}% de acertos</h3><p>Você respondeu a ${total} questões ${s.sim?'no simulado':'na atividade de treino'}.</p>${progress(correct,total)}<button class="btn primary" data-action="finishquiz">${s.day?'Seguir para revisão →':'Finalizar →'}</button></div>`;return}
  let id=s.ids[position],q=pool().find(x=>x.id===id),result=s.results.find(x=>x.position===position);$('#main').innerHTML=header(s.sim?'Simulado Cesgranrio — modelo':'Questões comentadas',s.day?`Etapa 2 do roteiro · ${formatDay(s.day)}`:'Treino de fixação com respostas fundamentadas.')+`<div class="card" style="max-width:880px"><div class="split"><span class="badge">${htmlSafe(q.subject)} · ${htmlSafe(q.topic)}</span><span class="status">Questão ${position+1} de ${total}</span></div>${progress(position,total)}<div class="question"><h3>${htmlSafe(q.question)}</h3>${q.options.map((opt,i)=>`<button class="option ${result?(i===q.answer?'correct':i===result.choice?'wrong':''):''}" data-action="answer" data-choice="${i}" ${result?'disabled':''}><span class="choice-badge">${letters[i]}</span><span>${htmlSafe(opt)}</span></button>`).join('')}${result?`<div class="explanation"><strong>${result.correct?'Resposta correta!':'Resposta incorreta.'} Gabarito: ${letters[q.answer]}.</strong><p>${htmlSafe(q.explain)}</p></div><button class="btn primary" data-action="nextquestion">${position===total-1?'Ver meu resultado →':'Próxima questão →'}</button>`:''}</div></div><button class="btn" style="margin-top:18px" data-action="stopquiz">Sair e conservar progresso</button>`;
 }
 function answer(choice){let s=state.session;if(!s||s.at>=s.ids.length||s.results.some(x=>x.position===s.at))return;let id=s.ids[s.at],q=pool().find(x=>x.id===id),right=Number(choice)===q.answer;let res={id,choice:Number(choice),correct:right,position:s.at,date:nowIso(),subject:q.subject,topic:q.topic};s.results.push(res);state.answers.push(res);persist();renderQuestions()}
-function finishQuiz(){let s=state.session;if(!s)return;if(s.sim)state.simulations.push({date:nowIso(),results:s.results.length,correct:s.results.filter(x=>x.correct).length});let day=s.day,area=s.area;if(day&&s.results.length===s.ids.length){state.agenda[day]=state.agenda[day]||{};state.agenda[day].quiz=true}state.session=null;persist();if(day)startFlash(area,day);else show('dashboard')}
-const cards=QUESTION_BANK.map((q,i)=>({id:'f'+i,area:q[0],front:q[1],back:q[4]}));
+function finishQuiz(){let s=state.session;if(!s)return;if(s.sim)state.simulations.push({date:nowIso(),results:s.results.length,correct:s.results.filter(x=>x.correct).length});let day=s.day,area=s.area;if(day&&s.results.length===s.ids.length){state.agenda[day]=state.agenda[day]||{};state.agenda[day].quiz=true}state.session=null;persist();if(day)startFlash(null,day);else show('dashboard')}
+const cards=QUESTION_BANK.map((q,i)=>({id:'f'+i,questionIndex:i,area:q[0],topic:q[5],front:q[1],back:q[4]}));
 let flashSession=null;
-function startFlash(area=null,day=null){flashSession={area,day,cardList:shuffled(cards.filter(c=>!area||c.area===area)).slice(0,day?5:10),at:0,flipped:false};renderReview()}
+function startFlash(area=null,day=null){
+ let selected=cards.filter(c=>!area||c.area===area);
+ if(day){
+  const plan=calcPlan().find(d=>d.date===day);
+  const ids=new Set(relatedQuestions(plan).map(q=>q.id));
+  selected=selected.filter(c=>ids.has(c.questionIndex));
+  if(!selected.length){
+   state.agenda[day]={...(state.agenda[day]||{}),flash:true,flashNotAvailable:true};
+   persist();toast('Ainda não há cartões relacionados a este assunto; os demais continuam disponíveis em Revisão.');
+   show('agenda');return;
+  }
+ }
+ flashSession={area,day,cardList:shuffled(selected).slice(0,day?5:10),at:0,flipped:false};
+ renderReview();
+}
 function renderReview(){currentView='review';let fs=flashSession;if(!fs){$('#main').innerHTML=header('Flashcards e revisões','Recupere o conhecimento ativamente e registre os cartões revisados.')+`<div class="grid third">${subjects.map(a=>`<div class="card"><h3>${a}</h3><p class="small muted">${cards.filter(c=>c.area===a).length} cartões disponíveis</p><button class="btn primary" data-action="startcards" data-area="${a}">Revisar →</button></div>`).join('')}</div><div class="notice blue">Flashcards usam perguntas autorais e explicações resumidas; não reproduzem o texto protegido das apostilas.</div>`;return}
  if(fs.at>=fs.cardList.length){$('#main').innerHTML=header('Revisão concluída','Mais uma etapa encerrada na sua preparação.')+`<div class="card"><h3>${fs.cardList.length} cartões revisados</h3><button class="btn primary" data-action="finishcards">${fs.day?'Concluir roteiro diário →':'Voltar ao painel →'}</button></div>`;return}
  let c=fs.cardList[fs.at];$('#main').innerHTML=header('Revisão ativa',fs.day?`Etapa 3 do roteiro · ${formatDay(fs.day)}`:'Relembre o conteúdo antes de revelar a explicação.')+`<div class="card" style="max-width:840px"><div class="split"><span class="badge">${htmlSafe(c.area)}</span><span class="status">Cartão ${fs.at+1} / ${fs.cardList.length}</span></div>${progress(fs.at,fs.cardList.length)}<button class="flashcard" style="width:100%" data-action="flipcard"><div><small>${fs.flipped?'EXPLICAÇÃO':'PERGUNTA · CLIQUE PARA REVELAR'}</small><h3>${htmlSafe(fs.flipped?c.back:c.front)}</h3><p class="muted small">${fs.flipped?'Clique para voltar à pergunta':'Toque no cartão para revelar a resposta'}</p></div></button><div style="margin-top:17px">${fs.flipped?`<button class="btn primary" data-action="flashnext">Entendi, próximo cartão →</button>`:`<button class="btn" data-action="flipcard">Revelar resposta</button>`}</div></div>`;
@@ -622,7 +651,7 @@ function renderSettings(){
  <form id="studySettings" class="settings-form">
  <label>Início do plano<input type="date" name="startDate" value="${htmlSafe(v.startDate)}" required></label>
  <label>Minutos por dia<input type="number" min="30" max="480" step="15" name="minutes" value="${v.minutes}"></label>
- <label>Ritmo de leitura (páginas/hora)<input type="number" min="3" max="30" name="pagesPerHour" value="${v.pagesPerHour}"></label>
+ <label>Ritmo de leitura (páginas/hora)<input type="number" min="3" max="200" name="pagesPerHour" value="${v.pagesPerHour}"></label><label>Limite de páginas por dia (máximo 200)<input type="number" min="1" max="200" step="1" name="pagesPerDay" value="${v.pagesPerDay||200}"></label><p class="small muted">O plano distribui a carga total entre os dias necessários, deixando as metas praticamente iguais. Alterar o limite recalcula os trechos sem apagar as páginas já confirmadas.</p>
  <label>Dias de estudo</label><div class="day-grid">${['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map((name,i)=>`<label><input type="checkbox" name="day" value="${i}" ${v.days.includes(i)?'checked':''}>${name}</label>`).join('')}</div>
  <button class="btn primary" type="submit">Salvar e recalcular agenda</button></form></div>
  <div class="card"><h3>Minha conta e sincronização</h3>
@@ -645,7 +674,7 @@ function renderSettings(){
  <div class="toolbar"><button class="btn" data-action="export">Exportar progresso</button><button class="btn" data-action="import">Importar progresso</button></div></div></div>`;
  $('#studySettings').onsubmit=e=>{e.preventDefault();let fd=new FormData(e.target),days=fd.getAll('day').map(Number);
  if(!days.length){toast('Escolha pelo menos um dia para estudar.');return}
- state.settings={startDate:fd.get('startDate'),minutes:Math.min(480,Math.max(30,Number(fd.get('minutes'))||90)),pagesPerHour:Math.min(30,Math.max(3,Number(fd.get('pagesPerHour'))||8)),days};
+ state.settings={startDate:fd.get('startDate'),minutes:Math.min(480,Math.max(30,Number(fd.get('minutes'))||90)),pagesPerHour:Math.min(200,Math.max(3,Number(fd.get('pagesPerHour'))||8)),pagesPerDay:Math.min(200,Math.max(1,Number(fd.get('pagesPerDay'))||200)),days};
  persist();toast('Agenda recalculada!');show('agenda');
  };
 }
